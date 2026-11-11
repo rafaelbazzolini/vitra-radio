@@ -1,0 +1,16 @@
+.build/
+dist/
+previews/
+.DS_Store
+*.xcuserstate
+.env*
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
+**/local.properties
+**/key.properties
+**/build/
+**/.dart_tool/
+**/Pods/
+**/ephemeral/

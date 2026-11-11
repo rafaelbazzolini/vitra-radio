@@ -1,0 +1,174 @@
+name: Release main
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        run: echo "version=0.1.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          cache: true
+      - run: flutter pub get && flutter analyze && flutter test
+        working-directory: cross_platform
+      - run: python3 scripts/check_public_content.py
+  macos:
+    needs: [version, validate]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Apple Silicon
+        env:
+          VITRA_VERSION: ${{ needs.version.outputs.version }}
+          VITRA_BUILD: ${{ github.run_number }}
+          VITRA_ARCH: arm64
+        run: |
+          bash scripts/build.sh
+          cp 'dist/Vitra Radio.app/Contents/MacOS/VitraRadio' .build/VitraRadio-arm64
+      - name: Build Intel and universal
+        env:
+          VITRA_VERSION: ${{ needs.version.outputs.version }}
+          VITRA_BUILD: ${{ github.run_number }}
+          VITRA_ARCH: x86_64
+          VITRA_SKIP_TESTS: 1
+        run: |
+          bash scripts/build.sh
+          cp 'dist/Vitra Radio.app/Contents/MacOS/VitraRadio' .build/VitraRadio-x86_64
+          lipo -create .build/VitraRadio-arm64 .build/VitraRadio-x86_64 -output 'dist/Vitra Radio.app/Contents/MacOS/VitraRadio'
+          codesign --force --deep --sign - 'dist/Vitra Radio.app'
+          lipo -archs 'dist/Vitra Radio.app/Contents/MacOS/VitraRadio'
+          mkdir -p artifacts
+          ditto -c -k --sequesterRsrc --keepParent 'dist/Vitra Radio.app' artifacts/VitraRadio-macOS-universal.zip
+          hdiutil create -volname 'Vitra Radio' -srcfolder 'dist/Vitra Radio.app' -ov -format UDZO artifacts/VitraRadio-macOS-universal.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: artifacts/*
+  desktop:
+    needs: [version, validate]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-24.04
+            platform: linux
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: cross_platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          cache: true
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev libasound2-dev
+      - run: flutter pub get
+      - run: flutter build ${{ matrix.platform }} --release --build-name=${{ needs.version.outputs.version }} --build-number=${{ github.run_number }}
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force ../artifacts
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath ../artifacts/VitraRadio-Windows11-x64.zip
+      - if: runner.os == 'Linux'
+        run: |
+          mkdir -p ../artifacts
+          tar -C build/linux/x64/release/bundle -czf ../artifacts/VitraRadio-Linux-x64.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: artifacts/*
+  android:
+    needs: [version, validate]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cross_platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          cache: true
+      - name: Restore persistent release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          test -n "$KEYSTORE_BASE64" || { echo 'Missing Android release signing secrets'; exit 1; }
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android/app/release.jks
+          printf 'storeFile=release.jks\nstorePassword=%s\nkeyAlias=vitra\nkeyPassword=%s\n' "$KEYSTORE_PASSWORD" "$KEYSTORE_PASSWORD" > android/key.properties
+      - run: flutter pub get
+      - run: flutter build apk --release --build-name=${{ needs.version.outputs.version }} --build-number=${{ github.run_number }}
+      - run: flutter build appbundle --release --build-name=${{ needs.version.outputs.version }} --build-number=${{ github.run_number }}
+      - run: |
+          mkdir -p ../artifacts
+          cp build/app/outputs/flutter-apk/app-release.apk ../artifacts/VitraRadio-Android.apk
+          cp build/app/outputs/bundle/release/app-release.aab ../artifacts/VitraRadio-Android.aab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: artifacts/*
+  ios:
+    needs: [version, validate]
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: cross_platform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign --build-name=${{ needs.version.outputs.version }} --build-number=${{ github.run_number }}
+      - run: |
+          mkdir -p ../artifacts
+          ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app ../artifacts/VitraRadio-iOS-UNSIGNED-NOT-INSTALLABLE.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned
+          path: artifacts/*
+  publish:
+    needs: [version, macos, desktop, android, ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Publish tested assets from this main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          cd artifacts
+          sha256sum * > SHA256SUMS.txt
+          cd ..
+          gh release create "v$VERSION" artifacts/* --target "$GITHUB_SHA" --title "Vitra Radio $VERSION" --notes-file docs/RELEASE_NOTES.md

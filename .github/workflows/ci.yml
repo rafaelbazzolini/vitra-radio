@@ -1,0 +1,29 @@
+name: Validate
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [dev]
+permissions:
+  contents: read
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  shared:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.2'
+          cache: true
+      - run: flutter pub get && flutter analyze && flutter test
+        working-directory: cross_platform
+      - run: python3 scripts/check_public_content.py
+  native:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/build.sh
+      - run: '"dist/Vitra Radio.app/Contents/MacOS/VitraRadio" --verify-audio-balance'
