@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: release-main
+  group: release-main-v2
   cancel-in-progress: false
 jobs:
   version:
