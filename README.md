@@ -1,5 +1,8 @@
 # Vitra Radio
 
+[![Release main](https://github.com/rafaelbazzolini/vitra-radio/actions/workflows/release.yml/badge.svg)](https://github.com/rafaelbazzolini/vitra-radio/actions/workflows/release.yml)
+[![Validate](https://github.com/rafaelbazzolini/vitra-radio/actions/workflows/ci.yml/badge.svg)](https://github.com/rafaelbazzolini/vitra-radio/actions/workflows/ci.yml)
+
 **O seu dia tem trilha.** Um player de rádio pela internet com temas visuais, favoritas, histórico e programação de horários.
 
 [Baixar versões](https://github.com/rafaelbazzolini/vitra-radio/releases/latest) · [Builds](https://github.com/rafaelbazzolini/vitra-radio/actions) · [Privacidade](docs/PRIVACY.md) · [Como contribuir](CONTRIBUTING.md)
