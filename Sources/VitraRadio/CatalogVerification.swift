@@ -15,12 +15,12 @@ enum CatalogVerification {
                 check(!popular.stations.isEmpty && popular.rawCount == RadioCatalogClient.pageSize, "Catálogo online retorna a primeira página de rádios")
                 let second = try await client.search(CatalogQuery(), offset: RadioCatalogClient.pageSize)
                 check(!second.stations.isEmpty && Set(second.stations.map(\.id)) != Set(popular.stations.map(\.id)), "Carregar mais retorna outra página")
-                let search = try await client.search(CatalogQuery(name: "Antena", brazilOnly: true))
-                check(!search.stations.isEmpty && search.stations.allSatisfy { $0.name.localizedCaseInsensitiveContains("Antena") }, "Busca por nome retorna emissoras correspondentes")
+                let search = try await client.search(CatalogQuery(name: "Jazz", brazilOnly: true))
+                check(!search.stations.isEmpty && search.stations.allSatisfy { $0.name.localizedCaseInsensitiveContains("Jazz") }, "Busca por nome retorna emissoras correspondentes")
                 let world = try await client.search(CatalogQuery(name: "BBC", brazilOnly: false))
                 check(!world.stations.isEmpty, "Busca mundial acessa emissoras fora do Brasil")
                 let model = RadioCatalog(client: client)
-                await model.search(CatalogQuery(name: "Antena"))
+                await model.search(CatalogQuery(name: "Jazz"))
                 check(!model.isLoading && model.error == nil && !model.stations.isEmpty, "Estado da tela finaliza o carregamento sem erro")
             } catch {
                 failures += 1

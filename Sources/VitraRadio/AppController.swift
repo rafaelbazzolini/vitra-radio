@@ -488,7 +488,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     @objc private func about() {
         NSApp.orderFrontStandardAboutPanel(options: [
             .applicationName: "Vitra Radio", .applicationVersion: "1.2.0",
-            .credits: NSAttributedString(string: "Sua frequência. Seu espaço.\nAntena 1 · Gaúcha · Atlântida · Lo-fi Kalizo\n\nArraste o miniplayer pela alça pontilhada.\nClique com o botão direito para tamanho e posição."),
+            .credits: NSAttributedString(string: "Sua frequência. Seu espaço.\nBiblioteca privada no seu dispositivo.\n\nArraste o miniplayer pela alça pontilhada.\nClique com o botão direito para tamanho e posição."),
             .version: "1"
         ])
     }

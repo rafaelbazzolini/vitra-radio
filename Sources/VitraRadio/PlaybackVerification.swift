@@ -42,7 +42,7 @@ enum PlaybackVerification {
             radio.select(Station.all[2])
             radio.pause()
             try? await Task.sleep(nanoseconds: 1_000_000_000)
-            if radio.selected.id == "atlantida" && radio.state == .paused && !radio.active {
+            if radio.selected.id == Station.all[2].id && radio.state == .paused && !radio.active {
                 print("PASS: troca rápida e pausa descartam callbacks antigos")
             } else {
                 failures += 1
