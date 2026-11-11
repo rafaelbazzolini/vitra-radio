@@ -2,6 +2,15 @@
 
 Esta versão é gerada do commit de `main` indicado na release, após as verificações e builds.
 
+### Novidades no macOS
+
+- Ajustes reúne Servidor, Temas, Automação e Miniplayer em abas.
+- Minhas músicas aparece na navegação após uma conexão bem-sucedida com o servidor.
+- O miniplayer pode exibir VU Digital ou Analógico atrás do nome da rádio, usando níveis reais do áudio e transparência para manter a leitura.
+- Aparência, largura, altura e posição sobre outras janelas podem ser configuradas em Ajustes → Miniplayer.
+
+### Downloads
+
 - **macOS Apple Silicon e Intel:** ZIP e DMG universais do app nativo. Assinatura ad hoc; ainda sem notarização Developer ID.
 - **Windows 11 x64:** extraia o ZIP inteiro e execute `vitra_radio.exe`. Inclui DLLs necessárias; sem assinatura Authenticode.
 - **Linux x64:** extraia o TAR e execute `vitra_radio`. Requer GTK 3 e libmpv (`sudo apt install libgtk-3-0 libmpv2` em Ubuntu 24.04).

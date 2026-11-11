@@ -33,7 +33,7 @@ struct RadioView: View {
 }
 
 enum ThemePage: String, CaseIterable, Identifiable {
-    case explore = "Início", catalog = "Todas as rádios", server = "Meu servidor", themes = "Temas", automation = "Automação"
+    case explore = "Início", catalog = "Todas as rádios", server = "Minhas músicas", themes = "Temas", automation = "Automação", settings = "Ajustes"
     var id: String { rawValue }
     var icon: String {
         switch self {
@@ -42,6 +42,7 @@ enum ThemePage: String, CaseIterable, Identifiable {
         case .server: return "server.rack"
         case .themes: return "paintpalette"
         case .automation: return "calendar.badge.clock"
+        case .settings: return "gearshape"
         }
     }
 }
@@ -50,6 +51,7 @@ struct ThemedRadioWindow: View {
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var radio: RadioPlayer
+    @EnvironmentObject private var servers: MusicServerStore
     @StateObject private var catalog = RadioCatalog()
     @State private var page: ThemePage = .explore
     @State private var search = ""
@@ -62,17 +64,19 @@ struct ThemedRadioWindow: View {
     var body: some View {
         VStack(spacing: 0) {
             titlebar
-            HStack(spacing: 7) { ForEach(ThemePage.allCases) { tab in navigation(tab) }; Spacer() }
+            HStack(spacing: 7) { ForEach(ThemePage.allCases.filter { $0 != .themes && $0 != .automation && ($0 != .server || servers.activeProfile != nil) }) { tab in navigation(tab) }; Spacer() }
                 .padding(.horizontal, 22).padding(.vertical, 9)
             workspace
             footer
         }.background { SkinSurface(skin: skin) }.foregroundStyle(design.ink)
             .preferredColorScheme(skin == .studio ? .light : .dark)
             .frame(minWidth: 1000, minHeight: 710)
+            .onChange(of: servers.activeProfile?.id) { value in if value == nil && page == .server { page = .settings } }
             .onAppear {
                 if CommandLine.arguments.contains("--automation-preview") { page = .automation }
                 if CommandLine.arguments.contains("--themes-preview") { page = .themes }
                 if CommandLine.arguments.contains("--server-preview") { page = .server }
+                if CommandLine.arguments.contains("--settings-preview") { page = .settings }
                 if CommandLine.arguments.contains("--catalog-preview") { page = .catalog }
             }
     }
@@ -101,7 +105,8 @@ struct ThemedRadioWindow: View {
     @ViewBuilder private var workspace: some View {
         switch page {
         case .catalog: CatalogView(catalog: catalog).background(Color(hex: design.panel).opacity(0.35))
-        case .server: MusicServerView().background(Color(hex: design.panel).opacity(0.35))
+        case .settings: RadioSettingsView()
+        case .server: MusicServerView(libraryOnly: true).background(Color(hex: design.panel).opacity(0.35))
         case .automation: AutomationView().background(Color(hex: design.panel).opacity(0.35))
         case .themes: PlayerThemesView().background(Color(hex: design.panel).opacity(0.35))
         case .explore:

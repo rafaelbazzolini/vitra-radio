@@ -52,6 +52,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     @Published var miniAppearance: MiniAppearance {
         didSet { if !preview { preferences.set(miniAppearance.rawValue, forKey: "miniAppearance") } }
     }
+    @Published var miniVUStyle: VUStyle { didSet { if !preview { preferences.set(miniVUStyle.rawValue, forKey: "miniVUStyle") } } }
     @Published var compactMini: Bool
     @Published private(set) var miniSize: CGSize
     private var mainWindow: NSWindow!
@@ -75,6 +76,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         self.accentColorHex = savedAccent.flatMap { (0...0xFFFFFF).contains($0.int64Value) ? UInt32($0.int64Value) : nil }
         self.vuStyle = VUStyle(rawValue: preferences.string(forKey: "vuStyle") ?? "") ?? .off
         self.playerSkin = PlayerSkin(rawValue: preferences.string(forKey: "playerSkin") ?? "") ?? .vitra
+        self.miniVUStyle = VUStyle(rawValue: preferences.string(forKey: "miniVUStyle") ?? "") ?? .off
         self.miniAppearance = MiniAppearance(rawValue: preferences.string(forKey: "miniAppearance") ?? "") ?? .solid
         self.needsDockFit = preferences.object(forKey: "miniWidth") == nil
         self.radio = RadioPlayer(preferences: preferences, updatesSystemMedia: !preview)

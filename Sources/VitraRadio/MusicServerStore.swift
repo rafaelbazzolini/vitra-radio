@@ -46,7 +46,7 @@ final class MusicServerStore: ObservableObject {
             persist()
             isWorking = false
             await connect(profile)
-            return true
+            return activeProfile?.id == profile.id
         } catch {
             self.error = MusicServerError.userMessage(error); isWorking = false
             return false

@@ -5,29 +5,33 @@ struct MusicServerView: View {
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var servers: MusicServerStore
     @EnvironmentObject private var radio: RadioPlayer
+    var configurationOnly = false
+    var libraryOnly = false
     @State private var editing: MusicServerProfile?
     @State private var search = ""
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 23) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("SUA BIBLIOTECA. EM QUALQUER LUGAR.").font(.system(size: 9, weight: .bold)).tracking(1.6).foregroundStyle(palette.muted)
-                        Text("Meu servidor.").font(.system(size: 29, weight: .semibold)).tracking(-1.1)
-                        Text("Conecte sua música por Tailscale, rede local ou internet.").font(.system(size: 12)).foregroundStyle(palette.muted)
+                if !libraryOnly {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("SUA BIBLIOTECA. EM QUALQUER LUGAR.").font(.system(size: 9, weight: .bold)).tracking(1.6).foregroundStyle(palette.muted)
+                            Text("Meu servidor.").font(.system(size: 29, weight: .semibold)).tracking(-1.1)
+                            Text("Conecte sua música por Tailscale, rede local ou internet.").font(.system(size: 12)).foregroundStyle(palette.muted)
+                        }
+                        Spacer()
+                        Button { editing = MusicServerProfile() } label: {
+                            Label("Adicionar", systemImage: "plus").font(.system(size: 12, weight: .semibold))
+                                .padding(.horizontal, 15).padding(.vertical, 11).foregroundStyle(palette.onAccent)
+                                .background(palette.accent, in: Capsule()).contentShape(Capsule())
+                        }.buttonStyle(.plain)
                     }
-                    Spacer()
-                    Button { editing = MusicServerProfile() } label: {
-                        Label("Adicionar", systemImage: "plus").font(.system(size: 12, weight: .semibold))
-                            .padding(.horizontal, 15).padding(.vertical, 11).foregroundStyle(palette.onAccent)
-                            .background(palette.accent, in: Capsule()).contentShape(Capsule())
-                    }.buttonStyle(.plain)
-                }
-                if servers.profiles.isEmpty { welcome }
-                else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 255), spacing: 12)], spacing: 12) {
-                        ForEach(servers.profiles) { profile in profileCard(profile) }
+                    if servers.profiles.isEmpty { welcome }
+                    else {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 255), spacing: 12)], spacing: 12) {
+                            ForEach(servers.profiles) { profile in profileCard(profile) }
+                        }
                     }
                 }
                 if let error = servers.error {
@@ -38,7 +42,7 @@ struct MusicServerView: View {
                     HStack(spacing: 10) { ProgressView().controlSize(.small); Text("Conectando à sua biblioteca…").font(.system(size: 12)).foregroundStyle(palette.muted) }
                         .frame(maxWidth: .infinity).padding(.vertical, 25)
                 }
-                if let profile = servers.activeProfile { library(profile) }
+                if !configurationOnly, let profile = servers.activeProfile { library(profile) }
             }.padding(.horizontal, 30).padding(.top, 47).padding(.bottom, 30)
         }.scrollIndicators(.hidden)
             .sheet(item: $editing) { profile in MusicServerForm(profile: profile) }

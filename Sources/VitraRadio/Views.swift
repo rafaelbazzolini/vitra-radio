@@ -3,9 +3,10 @@ import AppKit
 
 struct ClassicRadioView: View {
     @Environment(\.appPalette) private var palette
-    private enum Page { case explore, catalog, server, themes, automation }
+    private enum Page { case explore, catalog, server, themes, automation, settings }
     @EnvironmentObject private var radio: RadioPlayer
     @EnvironmentObject private var app: AppController
+    @EnvironmentObject private var servers: MusicServerStore
     @State private var page: Page = .explore
     @StateObject private var catalog = RadioCatalog()
     @State private var search = ""
@@ -24,7 +25,8 @@ struct ClassicRadioView: View {
                 sidebar.frame(width: 208)
                 Rectangle().fill(palette.line).frame(width: 1)
                 if page == .catalog { CatalogView(catalog: catalog) }
-                else if page == .server { MusicServerView() }
+                else if page == .server { MusicServerView(libraryOnly: true) }
+                else if page == .settings { RadioSettingsView() }
                 else if page == .themes { PlayerThemesView() }
                 else if page == .automation { AutomationView() }
                 else { mainContent }
@@ -36,7 +38,9 @@ struct ClassicRadioView: View {
         .foregroundStyle(palette.text)
         .preferredColorScheme(.dark)
         .frame(minWidth: 1000, minHeight: 710)
+        .onChange(of: servers.activeProfile?.id) { value in if value == nil && page == .server { page = .settings } }
         .onAppear {
+            if CommandLine.arguments.contains("--settings-preview") { page = .settings }
             if CommandLine.arguments.contains("--catalog-preview") { page = .catalog }
             if CommandLine.arguments.contains("--server-preview") { page = .server }
             if CommandLine.arguments.contains("--themes-preview") { page = .themes }
@@ -58,9 +62,10 @@ struct ClassicRadioView: View {
                 .foregroundStyle(palette.muted).padding(.leading, 12).padding(.bottom, 13)
             navigationButton("Início", symbol: "house.fill", selected: page == .explore) { page = .explore }
             navigationButton("Todas as rádios", symbol: "dot.radiowaves.left.and.right", selected: page == .catalog) { page = .catalog }
-            navigationButton("Meu servidor", symbol: "server.rack", selected: page == .server) { page = .server }
-            navigationButton("Temas", symbol: "paintpalette", selected: page == .themes) { page = .themes }
-            navigationButton("Automação", symbol: "calendar.badge.clock", selected: page == .automation) { page = .automation }
+            if servers.activeProfile != nil {
+                navigationButton("Minhas músicas", symbol: "music.note.list", selected: page == .server) { page = .server }
+            }
+            navigationButton("Ajustes", symbol: "gearshape", selected: page == .settings) { page = .settings }
             Rectangle().fill(palette.line).frame(height: 1).padding(.vertical, 14)
             HStack {
                 Text("SUAS RÁDIOS").font(.system(size: 9, weight: .bold)).tracking(1.8)
@@ -447,7 +452,7 @@ struct SlimMiniPlayerView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(radio.selected.name).font(.system(size: 11, weight: .semibold)).lineLimit(1)
                 PlaybackLabel().font(.system(size: 8))
-            }.frame(maxWidth: .infinity, alignment: .leading).layoutPriority(1)
+            }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).background { MiniVUBackground() }.layoutPriority(1)
             Button { radio.step(-1) } label: {
                 Image(systemName: "backward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())
             }.buttonStyle(.plain).foregroundStyle(palette.muted).help("Rádio favorita anterior ou faixa anterior")
@@ -555,7 +560,7 @@ struct RegularMiniPlayerView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(radio.selected.name).font(.system(size: showDetails ? 13 : 11, weight: .semibold)).lineLimit(1)
                     PlaybackLabel().font(.system(size: 8))
-                }.frame(maxWidth: .infinity, alignment: .leading)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).background { MiniVUBackground() }
                 if !showDetails {
             Button { radio.step(-1) } label: {
                 Image(systemName: "backward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())

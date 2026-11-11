@@ -113,6 +113,7 @@ struct SkinDisplay: View {
     let status: String
     var expanded: Bool = false
     var frequency: Double? = nil
+    var miniVU = false
     private var design: SkinDesign { skin.design.overridingAccent(palette.accentOverride) }
     var body: some View {
         VStack(alignment: .leading, spacing: expanded ? 7 : 3) {
@@ -121,6 +122,7 @@ struct SkinDisplay: View {
             if expanded { RadioDial(skin: skin, frequency: frequency) }
         }.foregroundStyle(design.ink).frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, expanded ? 12 : 7).padding(.vertical, expanded ? 10 : 5)
+            .background { if miniVU { MiniVUBackground() } }
             .background(Color(hex: design.panel).opacity(0.78), in: RoundedRectangle(cornerRadius: skin == .digital ? 3 : 7))
             .overlay(RoundedRectangle(cornerRadius: skin == .digital ? 3 : 7).strokeBorder(design.highlight.opacity(0.15)).allowsHitTesting(false))
     }
@@ -145,7 +147,7 @@ struct SkinnedMiniPlayer: View {
             }
             HStack(spacing: 6) {
                 if !expanded { DragHandle().frame(width: 16, height: 26) }
-                SkinDisplay(skin: skin, title: radio.selected.name, status: radio.state.isPlaying ? (radio.selected.isLive ? "AO VIVO · STEREO" : "REPRODUZINDO") : radio.state.label, expanded: expanded && app.miniSize.height >= 145, frequency: radio.selected.isLive ? FrequencyScale.fm(radio.selected.frequency) : nil)
+                SkinDisplay(skin: skin, title: radio.selected.name, status: radio.state.isPlaying ? (radio.selected.isLive ? "AO VIVO · STEREO" : "REPRODUZINDO") : radio.state.label, expanded: expanded && app.miniSize.height >= 145, frequency: radio.selected.isLive ? FrequencyScale.fm(radio.selected.frequency) : nil, miniVU: true)
                     .layoutPriority(1)
                 if !expanded { controls; options }
                 else if app.miniSize.width >= 310 {
