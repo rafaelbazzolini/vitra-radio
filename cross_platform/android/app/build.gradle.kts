@@ -13,7 +13,7 @@ if (signingFile.exists()) signingProps.load(FileInputStream(signingFile))
 
 android {
     namespace = "com.vitra.vitra_radio"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
