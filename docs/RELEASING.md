@@ -40,3 +40,9 @@ Windows usa um ZIP portátil x64 completo; não há assinatura Authenticode aind
 ## Atualização nos dispositivos
 
 Os clientes só consultam releases estáveis do repositório oficial. Não usam tags de dev nem instalam executáveis por conta própria. Permissões de notificação são opcionais. A consulta não ocorre com o processo encerrado. Para iOS distribuído por loja, a atualização precisa seguir o mecanismo de TestFlight/App Store.
+
+## Primeira distribuição
+
+A release 0.1.2 reúne os quatro builds aprovados no CI e o Android assinado compilado localmente, do mesmo código, após um download corrompido de NDK e uma repetição que ficou em fila. A assinatura do APK foi verificada com apksigner. As notas da release registram isso; não tratam o job Android como aprovado. O pipeline passou a preparar o NDK com até três tentativas antes da compilação.
+
+A cópia privada da chave Android criada para este projeto foi guardada fora dos caches de build, em `~/Library/Application Support/Vitra Radio/ReleaseSigning/`, com acesso restrito ao usuário. Mantenha um backup privado separado; nunca envie esse diretório ao GitHub.

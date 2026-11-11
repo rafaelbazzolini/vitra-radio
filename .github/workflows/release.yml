@@ -112,6 +112,14 @@ jobs:
         with:
           flutter-version: '3.44.2'
           cache: true
+      - name: Ensure NDK with download retry
+        run: |
+          for attempt in 1 2 3; do
+            if sdkmanager --install 'ndk;28.2.13676358'; then break; fi
+            echo "Retrying NDK download ($attempt/3)"
+            sleep 5
+          done
+          test -f "$ANDROID_HOME/ndk/28.2.13676358/source.properties"
       - name: Restore persistent release signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
