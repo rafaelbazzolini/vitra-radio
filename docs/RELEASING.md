@@ -39,7 +39,13 @@ Windows usa um ZIP portátil x64 completo; não há assinatura Authenticode aind
 
 ## Atualização nos dispositivos
 
-Os clientes só consultam releases estáveis do repositório oficial. Não usam tags de dev nem instalam executáveis por conta própria. Permissões de notificação são opcionais. A consulta não ocorre com o processo encerrado. Para iOS distribuído por loja, a atualização precisa seguir o mecanismo de TestFlight/App Store.
+Os clientes só consultam releases estáveis do repositório oficial. Não usam tags de dev. A consulta não ocorre com o processo encerrado.
+
+O macOS nativo mostra o aviso dentro da janela e oferece **Atualizar e reiniciar**, após ação do usuário. O pacote `VitraRadio-macOS-universal.zip` e `SHA256SUMS.txt` devem estar anexados à release. O cliente valida URL e tamanho dos assets, SHA-256, caminhos e tamanho expandido do ZIP, ausência de links, bundle ID, versão, arquitetura e assinatura do app. Prepara uma cópia na mesma pasta do app instalado e inicia um auxiliar que aguarda a saída do processo antigo, troca os diretórios atomicamente e reabre o app. Uma falha na chamada de reabertura restaura a cópia anterior. Não modifica as preferências nem as credenciais do usuário. A assinatura ad hoc atual verifica integridade; ainda não autentica um Developer ID.
+
+Para testes locais: `VitraRadio --verify-update-package <ZIP> <SHA256SUMS.txt> <versão>` prepara o pacote real em uma pasta temporária sem modificar o app instalado. `--self-test` também cobre pacotes alterados, caminhos inválidos, links, comparação de versões e recuperação após falha de abertura.
+
+A edição compartilhada mantém o download manual e notificações do sistema opcionais. Para iOS distribuído por loja, a atualização precisa seguir o mecanismo de TestFlight/App Store.
 
 ## Primeira distribuição
 

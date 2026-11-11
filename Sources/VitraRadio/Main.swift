@@ -5,6 +5,12 @@ import Foundation
 struct VitraRadioMain {
     @MainActor
     static func main() {
+        if let index = CommandLine.arguments.firstIndex(of: "--install-update"), CommandLine.arguments.count > index + 1 {
+            exit(UpdateInstaller.runHelper(planURL: URL(fileURLWithPath: CommandLine.arguments[index + 1])))
+        }
+        if let index = CommandLine.arguments.firstIndex(of: "--verify-update-package"), CommandLine.arguments.count > index + 3 {
+            exit(UpdateTests.verifyPackage(archive: URL(fileURLWithPath: CommandLine.arguments[index + 1]), checksums: URL(fileURLWithPath: CommandLine.arguments[index + 2]), version: CommandLine.arguments[index + 3]))
+        }
         if CommandLine.arguments.contains("--self-test") {
             SelfTests.run()
             return

@@ -57,7 +57,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     @Published private(set) var miniSize: CGSize
     private var mainWindow: NSWindow!
     private var mini: DockSidePanel?
-    private var updateChecker: UpdateChecker?
+    let updateChecker: UpdateChecker
     private let animatedIcon = AnimatedAppIcon()
     private var statusItem: NSStatusItem?
     private var subscriptions: Set<AnyCancellable> = []
@@ -71,6 +71,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     init(preferences: UserDefaults = .standard, preview: Bool = false) {
         self.preferences = preferences
         self.preview = preview
+        self.updateChecker = UpdateChecker(preferences: preferences)
         self.scheduler = RadioAutomationStore(preferences: preferences)
         let savedAccent = preferences.object(forKey: "accentColorHex") as? NSNumber
         self.accentColorHex = savedAccent.flatMap { (0...0xFFFFFF).contains($0.int64Value) ? UInt32($0.int64Value) : nil }
@@ -86,6 +87,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         let defaultSize = isCompact ? CGSize(width: 280, height: 64) : CGSize(width: 326, height: 134)
         miniSize = MiniSizing.clamped(preferences.object(forKey: "miniWidth") == nil ? defaultSize : CGSize(width: preferences.double(forKey: "miniWidth"), height: preferences.double(forKey: "miniHeight")))
         super.init()
+        if preview && CommandLine.arguments.contains("--updates-preview") { updateChecker.previewAvailable() }
         if preview && CommandLine.arguments.contains("--vu-preview") { vuStyle = .digital }
         if preview && CommandLine.arguments.contains("--vu-modern-preview") { vuStyle = .modern }
         if preview && CommandLine.arguments.contains("--vu-analog-preview") { vuStyle = .analog }
@@ -123,7 +125,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
                 self.recordLifecycle("automação aplicada: \(rule.station.name) [\(rule.periodLabel)]")
             })
         }
-        if !preview { let checker = UpdateChecker(preferences: preferences); updateChecker = checker; checker.start() }
+        if !preview {
+            updateChecker.beforeRestart = { [weak self] in
+                guard let self else { return }
+                self.preferences.set(self.radio.state.isPlaying && self.radio.selected.isLive, forKey: "resumeAfterUpdate")
+            }
+            updateChecker.start()
+            if preferences.bool(forKey: "resumeAfterUpdate") {
+                preferences.removeObject(forKey: "resumeAfterUpdate")
+                radio.play()
+            }
+        }
         recordLifecycle("iniciado")
         radio.$state.sink { [weak self] state in
             self?.statusItem?.button?.toolTip = "Vitra Radio · \(state.label)"
@@ -208,7 +220,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         mainWindow.isReleasedWhenClosed = false
         mainWindow.backgroundColor = NSColor(red: 0.06, green: 0.08, blue: 0.065, alpha: 1)
         mainWindow.contentMinSize = NSSize(width: 1000, height: 710)
-        mainWindow.contentView = ClickableHostingView(rootView: RadioView().environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
+        mainWindow.contentView = ClickableHostingView(rootView: RadioView().environmentObject(updateChecker).environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
         mainWindow.delegate = self
         mainWindow.standardWindowButton(.closeButton)?.target = self
         mainWindow.standardWindowButton(.closeButton)?.action = #selector(hideMainWindow)
@@ -382,7 +394,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         saveMiniPosition()
         animatedIcon.stop()
         scheduler.stop()
-        updateChecker?.stop()
+        updateChecker.stop()
         radio.shutdown()
         servers.disconnect()
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver) }
@@ -427,7 +439,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         applicationMenu.addItem(hide)
         applicationMenu.addItem(.separator())
         applicationMenu.addItem(menuItem("Verificar atualizações…", action: #selector(checkUpdates)))
-        applicationMenu.addItem(menuItem("Ativar avisos de atualização…", action: #selector(enableUpdateNotifications)))
         applicationMenu.addItem(menuItem("Sair do Vitra Radio", action: #selector(quit), key: "q"))
         applicationItem.submenu = applicationMenu
         mainMenu.addItem(applicationItem)
@@ -479,8 +490,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     @objc private func moveMiniRight() { showMini(); positionMini(right: true) }
     @objc private func moveMiniLeft() { showMini(); positionMini(right: false) }
     @objc private func selectStation(_ sender: NSMenuItem) { radio.select(Station.all[sender.tag]) }
-    @objc private func checkUpdates() { updateChecker?.check(manual: true) }
-    @objc private func enableUpdateNotifications() { updateChecker?.enableNotifications() }
+    @objc private func checkUpdates() { showMain(); updateChecker.check(manual: true) }
 
     @objc private func quit() {
         exitRequested = true

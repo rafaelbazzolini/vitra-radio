@@ -23,9 +23,12 @@ extension EnvironmentValues {
 struct RadioView: View {
     @EnvironmentObject private var app: AppController
     var body: some View {
-        Group {
-            if app.playerSkin == .vitra { ClassicRadioView() }
-            else { ThemedRadioWindow(skin: app.playerSkin) }
+        VStack(spacing: 0) {
+            UpdateBanner()
+            Group {
+                if app.playerSkin == .vitra { ClassicRadioView() }
+                else { ThemedRadioWindow(skin: app.playerSkin) }
+            }
         }.environment(\.appPalette, AppPalette(skin: app.playerSkin, accentOverride: app.accentColorHex))
             .environment(\.colorScheme, app.playerSkin == .studio ? .light : .dark)
             .tint(app.playerSkin.design.overridingAccent(app.accentColorHex).highlight)

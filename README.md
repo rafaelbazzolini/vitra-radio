@@ -54,7 +54,7 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 | VU Digital, Moderno e Analógico | Medição real; espectro de oito bandas por canal | Ainda não |
 | Equilíbrio automático de volume | Sim | Ainda não |
 | Navidrome/Subsonic, Jellyfin e pastas locais | Sim; credenciais no Keychain | URL direta acessível por rede local/Tailscale |
-| Avisos de atualização | Sim | Sim, notificações do sistema com permissão |
+| Avisos de atualização | Dentro do app, com atualização e reinício | Sim, notificações do sistema com permissão |
 
 ### Automação
 
@@ -72,8 +72,10 @@ O Digital separa oito bandas reais (63, 125, 250, 500 Hz, 1, 2, 4 e 8 kHz), com 
 - Cada push em `main` dispara builds e publica uma release versionada **somente quando todos os jobs exigidos passam**.
 - Apps consultam a última release estável, comparam versões numericamente e mostram um aviso.
 - A consulta ocorre ao iniciar e a cada hora enquanto o processo estiver ativo; a edição Flutter também consulta ao retornar ao primeiro plano.
-- Notificações do sistema precisam ser habilitadas no app e permitidas pelo usuário. Há também indicação dentro do aplicativo.
-- O usuário abre a página da release e instala a atualização. Não há execução de código remoto, alteração silenciosa do app ou substituição pela branch bruta.
+- No macOS nativo, o aviso aparece dentro do app em todos os temas. **Atualizar e reiniciar** baixa o ZIP universal em segundo plano, confere o SHA-256 publicado e valida identidade, versão, arquitetura e integridade da assinatura do bundle. Depois substitui o app instalado e o reabre. Não é necessário abrir DMG ou instalar manualmente.
+- O app mantém a versão anterior até a nova cópia estar preparada; se a chamada de reabertura falhar, restaura a cópia anterior. Rádios e preferências ficam fora do bundle e são preservadas. A pasta de instalação precisa permitir escrita; volumes de DMG não são atualizados.
+- A assinatura atual é ad hoc: a integridade é verificada, mas ainda não há autenticação por Developer ID. O download e o checksum vêm da release HTTPS do repositório oficial.
+- A edição compartilhada continua usando avisos e o download pela release (ou a loja). Nela, notificações do sistema dependem de permissão. As versões macOS antigas sem o atualizador integrado precisam de uma instalação inicial da nova base.
 - No iOS, novas versões instaláveis devem ser distribuídas por TestFlight/App Store com assinatura adequada. Não existe atualização arbitrária de executáveis pela branch.
 
 Veja [releases e assinatura](docs/RELEASING.md) para configurar chaves e distribuição. Não prometemos avisos com o aplicativo totalmente encerrado: isso exigiria serviços de push/loja ou integração de background própria de cada sistema.

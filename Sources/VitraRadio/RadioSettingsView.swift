@@ -3,7 +3,7 @@ import SwiftUI
 struct RadioSettingsView: View {
     @Environment(\.appPalette) private var palette
     @AppStorage("settingsTab") private var tab = "Servidor"
-    private let tabs = ["Servidor", "Temas", "Automação", "Miniplayer"]
+    private let tabs = ["Servidor", "Temas", "Automação", "Miniplayer", "Atualizações"]
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Ajustes").font(.system(size: 27, weight: .semibold)).padding(.bottom, 18)
@@ -23,11 +23,12 @@ struct RadioSettingsView: View {
                 case "Temas": PlayerThemesView()
                 case "Automação": AutomationView()
                 case "Miniplayer": MiniSettingsView()
+                case "Atualizações": UpdateSettingsView()
                 default: MusicServerView(configurationOnly: true)
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }.padding(.horizontal, 24).padding(.top, 38).foregroundStyle(palette.text)
-            .onAppear { if CommandLine.arguments.contains("--mini-settings-preview") { tab = "Miniplayer" } }
+            .onAppear { if CommandLine.arguments.contains("--mini-settings-preview") { tab = "Miniplayer" }; if CommandLine.arguments.contains("--updates-preview") { tab = "Atualizações" } }
     }
 }
 

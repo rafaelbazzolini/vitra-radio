@@ -17,7 +17,7 @@ A distribuição pública inicia sem rádios, favoritas, histórico, automaçõe
 
 ## Notificações e atualizações
 
-Notificações são opcionais e dependem da permissão do sistema. O app verifica versões enquanto está aberto/ativo; não existe um serviço de push que acompanhe dispositivos encerrados. Nenhum instalador é executado silenciosamente.
+No macOS nativo, o aviso de atualização aparece dentro do app e não requer permissão de notificações do sistema. Ao clicar em Atualizar e reiniciar, o usuário autoriza baixar e validar o pacote da release oficial e substituir a instalação. A operação preserva preferências e credenciais. A edição compartilhada mantém notificações opcionais que dependem da permissão do sistema. O app verifica versões enquanto está aberto/ativo; não existe um serviço de push que acompanhe dispositivos encerrados.
 
 ## Remover dados
 

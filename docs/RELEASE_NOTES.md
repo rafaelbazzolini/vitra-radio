@@ -4,6 +4,8 @@ Esta versão é gerada do commit de `main` indicado na release, após as verific
 
 ### Novidades no macOS
 
+- Aviso dentro do app e botão Atualizar e reiniciar: baixa, valida e substitui a instalação sem abrir DMG, preservando as preferências.
+
 - Ajustes reúne Servidor, Temas, Automação e Miniplayer em abas.
 - Minhas músicas aparece na navegação após uma conexão bem-sucedida com o servidor.
 - O miniplayer pode exibir VU Digital ou Analógico atrás do nome da rádio, usando níveis reais do áudio e transparência para manter a leitura.
@@ -20,6 +22,6 @@ Esta versão é gerada do commit de `main` indicado na release, após as verific
 A edição compartilhada tem catálogo, streams por URL, favoritas, recentes, temas, programação e avisos de atualização. Os recursos avançados de mini player, VU de oito bandas e servidores Navidrome/Jellyfin completos estão no app nativo de macOS. Consulte a matriz de recursos no README.
 
 Instalação nova não inclui rádios pessoais, histórico, favoritas, servidores ou automações do desenvolvedor.
-Os avisos de versão funcionam ao abrir o app e enquanto o processo está ativo, com permissão de notificações. Nenhum executável é baixado ou instalado silenciosamente. iOS usa a distribuição permitida pela Apple.
+Os avisos de versão funcionam ao abrir o app e enquanto o processo está ativo. No macOS nativo, aparecem dentro do app: o usuário pode atualizar e reiniciar pela própria janela, sem reinstalação manual. A edição compartilhada mantém os avisos do sistema com permissão e o download manual. iOS usa a distribuição permitida pela Apple.
 
 Confira os hashes dos arquivos em `SHA256SUMS.txt`. A instalação continua dependendo das políticas de segurança de cada sistema.

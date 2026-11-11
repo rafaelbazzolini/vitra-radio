@@ -77,6 +77,7 @@ enum SelfTests {
         check(abs(FrequencyScale.position(94.7) - (94.7 - 87.5) / 20.5) < 0.000001, "Marcador usa a posição exata da frequência na escala")
         check(FrequencyScale.position(87.5) == 0 && FrequencyScale.position(108) == 1, "Extremos da faixa FM coincidem com a escala")
         failures += AutomationTests.run()
+        failures += UpdateTests.run()
         print("\(failures == 0 ? "SELF_TEST_OK" : "SELF_TEST_FAILED"): \(failures) falhas")
         if failures > 0 { exit(1) }
     }
