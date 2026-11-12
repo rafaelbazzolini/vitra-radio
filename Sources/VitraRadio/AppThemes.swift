@@ -43,14 +43,14 @@ struct RadioView: View {
 }
 
 enum ThemePage: String, CaseIterable, Identifiable {
-    case explore = "Início", catalog = "Todas as rádios", podcasts = "Podcasts", server = "Minhas músicas", themes = "Temas", automation = "Automação", settings = "Ajustes"
+    case explore = "Início", catalog = "Todas as rádios", podcasts = "Podcasts", server = "Minhas Músicas", themes = "Temas", automation = "Automação", settings = "Ajustes"
     var id: String { rawValue }
     var icon: String {
         switch self {
         case .explore: return "house.fill"
         case .catalog: return "dot.radiowaves.left.and.right"
         case .podcasts: return "mic.fill"
-        case .server: return "server.rack"
+        case .server: return "music.note.list"
         case .themes: return "paintpalette"
         case .automation: return "calendar.badge.clock"
         case .settings: return "gearshape"
@@ -77,7 +77,7 @@ struct ThemedRadioWindow: View {
     var body: some View {
         VStack(spacing: 0) {
             titlebar
-            HStack(spacing: 7) { ForEach(ThemePage.allCases.filter { $0 != .themes && $0 != .automation && ($0 != .server || servers.activeProfile != nil) }) { tab in navigation(tab) }; Spacer() }
+            HStack(spacing: 7) { ForEach(ThemePage.allCases.filter { $0 != .themes && $0 != .automation }) { tab in navigation(tab) }; Spacer() }
                 .padding(.horizontal, 22).padding(.vertical, 9)
             workspace
             footer
@@ -85,7 +85,6 @@ struct ThemedRadioWindow: View {
             .preferredColorScheme(skin == .studio ? .light : .dark)
             .frame(minWidth: 1000, minHeight: 710)
             .onChange(of: countries.needsSetup) { value in if !value && radio.favoriteStations.isEmpty { page = .catalog } }
-            .onChange(of: servers.activeProfile?.id) { value in if value == nil && page == .server { page = .settings } }
             .onAppear {
                 if CommandLine.arguments.contains("--automation-preview") { page = .automation }
                 if CommandLine.arguments.contains("--themes-preview") { page = .themes }
@@ -123,7 +122,7 @@ struct ThemedRadioWindow: View {
         case .catalog: CatalogView(catalog: catalog).background(Color(hex: design.panel).opacity(0.35))
         case .podcasts: PodcastsView()
         case .settings: RadioSettingsView()
-        case .server: MusicServerView(libraryOnly: true).background(Color(hex: design.panel).opacity(0.35))
+        case .server: MusicServerView().background(Color(hex: design.panel).opacity(0.35))
         case .automation: AutomationView().background(Color(hex: design.panel).opacity(0.35))
         case .themes: PlayerThemesView().background(Color(hex: design.panel).opacity(0.35))
         case .explore:

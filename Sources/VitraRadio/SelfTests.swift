@@ -12,6 +12,19 @@ enum SelfTests {
         let preferences = UserDefaults(suiteName: domain)!
         defer { preferences.removePersistentDomain(forName: domain) }
 
+        var legacyFolder = MusicServerProfile()
+        legacyFolder.kind = .folder
+        legacyFolder.folderBookmark = Data([1, 2, 3])
+        let oldProfileData = try! JSONEncoder().encode(legacyFolder)
+        let restoredFolder = try! JSONDecoder().decode(MusicServerProfile.self, from: oldProfileData)
+        check(restoredFolder.isLocalFolder && restoredFolder.folderBookmark == legacyFolder.folderBookmark, "Biblioteca antiga preserva acesso à pasta")
+        legacyFolder.address = "smb://library.example.test/Music"
+        check(!legacyFolder.isLocalFolder, "Pasta de rede antiga abre na aba de servidor")
+        legacyFolder.localFolder = false
+        legacyFolder.address = ""
+        let networkFolder = try! JSONDecoder().decode(MusicServerProfile.self, from: JSONEncoder().encode(legacyFolder))
+        check(!networkFolder.isLocalFolder, "Pasta de rede sem endereço mantém a aba de servidor")
+
         check(Station.all.count == 5, "Cinco emissoras fictícias para testes")
         check(Set(Station.all.map(\.id)).count == Station.all.count, "Identificadores de rádio únicos")
         check(Station.all.allSatisfy { $0.stream.scheme == "https" }, "Streams HTTPS")

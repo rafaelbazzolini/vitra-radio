@@ -26,7 +26,7 @@ struct ClassicThemePreview: View {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 4) { Image(systemName: "waveform").foregroundStyle(previewAccent); Text("vitra").fontWeight(.bold) }.font(.system(size: 10))
-                    ForEach(["Início", "Todas as rádios", "Favoritas", "Meu servidor", "Temas"], id: \.self) { text in
+                    ForEach(["Início", "Todas as rádios", "Podcasts", "Minhas Músicas", "Ajustes"], id: \.self) { text in
                         Text(L10n.tr(text)).font(.system(size: 6, weight: .semibold)).foregroundStyle(text == "Início" ? previewAccent : Color(hex: 0x8D9A90)).lineLimit(1)
                     }
                     Spacer(minLength: 0)

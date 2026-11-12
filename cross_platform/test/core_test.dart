@@ -1,8 +1,50 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vitra_radio/core/models.dart';
 import 'package:vitra_radio/core/updates.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  test('daily checks respect 24 hours, restarts and clock adjustments', () {
+    final now = DateTime.utc(2026, 11, 12, 12);
+    expect(UpdateService.dailyDue(null, now), true);
+    expect(
+      UpdateService.dailyDue(
+        now.subtract(const Duration(hours: 23, minutes: 59)),
+        now,
+      ),
+      false,
+    );
+    expect(
+      UpdateService.dailyDue(now.subtract(const Duration(hours: 24)), now),
+      true,
+    );
+    expect(
+      UpdateService.dailyDue(now.add(const Duration(minutes: 1)), now),
+      true,
+    );
+  });
+  test('automatic update preferences persist independently', () async {
+    SharedPreferences.setMockInitialValues({});
+    final updates = UpdateService();
+    await updates.loadPreferences();
+    expect(updates.checkOnLaunch, true);
+    expect(updates.checkDaily, true);
+    await updates.setCheckDaily(false);
+    await updates.setCheckOnLaunch(false);
+    final reopened = UpdateService();
+    await reopened.loadPreferences();
+    expect(reopened.checkOnLaunch, false);
+    expect(reopened.checkDaily, false);
+    await reopened.setCheckOnLaunch(true);
+    final next = UpdateService();
+    await next.loadPreferences();
+    expect(next.checkOnLaunch, true);
+    expect(next.checkDaily, false);
+    updates.dispose();
+    reopened.dispose();
+    next.dispose();
+  });
   RadioSchedule rule(String id, int start, int end, {String? date}) =>
       RadioSchedule(
         id: id,

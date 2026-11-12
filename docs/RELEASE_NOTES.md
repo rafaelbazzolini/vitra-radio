@@ -7,12 +7,20 @@ Esta versão é gerada do commit de `main` indicado na release, após as verific
 - País sugerido na primeira abertura e seleção de vários países, com resultados misturados e paginação por país.
 - Correção do redesenho do VU no miniplayer e botão Apoiar, com destino de doação configurável pelo mantenedor.
 
+- Verificação de atualizações ao abrir e uma vez a cada 24 horas, com opções independentes em Ajustes → Atualizações. A busca manual continua disponível.
 - Aviso dentro do app e botão Atualizar e reiniciar: baixa, valida e substitui a instalação sem abrir DMG, preservando as preferências.
 
-- Ajustes reúne Servidor, Temas, Automação e Miniplayer em abas.
-- Minhas músicas aparece na navegação após uma conexão bem-sucedida com o servidor.
+- Ajustes reúne Idioma e região, Temas, Automação, Miniplayer e Atualizações em abas.
+- Minhas Músicas fica ao lado de Podcasts em todos os temas, mesmo sem biblioteca configurada. Adicionar oferece duas abas: Pasta deste dispositivo e Servidor de música (Navidrome/Subsonic, Jellyfin ou pasta compartilhada na rede).
 - O miniplayer pode exibir VU Digital ou Analógico atrás do nome da rádio, usando níveis reais do áudio e transparência para manter a leitura.
 - Aparência, largura, altura e posição sobre outras janelas podem ser configuradas em Ajustes → Miniplayer.
+
+### Android
+
+- Opções independentes em Ajustes para verificar ao abrir e automaticamente a cada 24 horas, persistidas entre sessões.
+- Aviso dentro do app e acesso direto ao APK oficial quando ele está disponível na release. A instalação continua sujeita à confirmação do Android.
+- Notificações do sistema são opcionais; não há promessa de verificações com o processo encerrado.
+- Podcasts e bibliotecas de pastas/servidores completos continuam exclusivos da edição nativa macOS nesta release.
 
 ### Downloads
 

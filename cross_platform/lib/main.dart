@@ -31,7 +31,7 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
     'Meus streams',
     'Temas',
     'Automação',
-    'Sobre',
+    'Ajustes',
   ];
   static const icons = [
     Icons.home_rounded,
@@ -58,15 +58,18 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    unawaited(updates.initializeNotifications().then((_) => updates.check()));
-    timer = Timer.periodic(const Duration(hours: 1), (_) => updates.check());
+    unawaited(updates.start());
+    timer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => updates.checkIfDue(),
+    );
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       radio.evaluateSchedule();
-      unawaited(updates.check());
+      unawaited(updates.checkIfDue());
     }
   }
 
@@ -811,6 +814,23 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
         'Rádio pela internet, com uma biblioteca que fica só no seu dispositivo. Projeto aberto, sem contas e sem telemetria própria.',
       ),
       const SizedBox(height: 20),
+      const Text(
+        'Atualizações automáticas',
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      SwitchListTile(
+        title: const Text('Verificar ao abrir o app'),
+        value: updates.checkOnLaunch,
+        onChanged: updates.initialized ? updates.setCheckOnLaunch : null,
+      ),
+      SwitchListTile(
+        title: const Text('Verificar automaticamente uma vez por dia'),
+        subtitle: const Text(
+          'Enquanto o app estiver ativo ou ao voltar para ele após 24 horas. A atualização é sugerida dentro do app; você decide quando instalar.',
+        ),
+        value: updates.checkDaily,
+        onChanged: updates.initialized ? updates.setCheckDaily : null,
+      ),
       ListTile(
         leading: const Icon(Icons.system_update),
         title: Text(
@@ -831,7 +851,7 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
         leading: const Icon(Icons.notifications_outlined),
         title: const Text('Ativar notificações de atualização'),
         subtitle: const Text(
-          'Requer permissão do sistema. Consultas ao abrir, retornar ao app e a cada hora enquanto ativo.',
+          'Opcional: além do aviso dentro do app, permite notificações do sistema. Respeita suas opções de verificação automática.',
         ),
         onTap: () async {
           await updates.requestNotificationPermission();

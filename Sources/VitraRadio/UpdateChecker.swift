@@ -34,6 +34,14 @@ struct AppRelease: Decodable {
     }
 }
 
+enum UpdateCheckSchedule {
+    static let interval: TimeInterval = 24 * 60 * 60
+    static func isDue(lastAttempt: Date?, now: Date) -> Bool {
+        guard let lastAttempt else { return true }
+        return now.timeIntervalSince(lastAttempt) >= interval || lastAttempt > now
+    }
+}
+
 @MainActor final class UpdateChecker: ObservableObject {
     nonisolated static let repository = "rafaelbazzolini/vitra-radio"
     @Published private(set) var available: AppRelease?
@@ -43,12 +51,27 @@ struct AppRelease: Decodable {
     @Published private(set) var error: String?
     @Published private(set) var lastCheck: Date?
     @Published var dismissed = false
+    @Published var checkOnLaunch: Bool {
+        didSet { preferences.set(checkOnLaunch, forKey: "updatesCheckOnLaunch") }
+    }
+    @Published var checkDaily: Bool {
+        didSet {
+            preferences.set(checkDaily, forKey: "updatesCheckDaily")
+            if started { checkDailyIfDue() }
+        }
+    }
+    private let preferences: UserDefaults
+    private var started = false
     private var timer: Timer?
     var beforeRestart: (() -> Void)?
     var currentVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0" }
     var bannerVisible: Bool { installing || !dismissed && (available != nil || detail != nil || error != nil) }
 
     init(preferences: UserDefaults) {
+        self.preferences = preferences
+        checkOnLaunch = preferences.object(forKey: "updatesCheckOnLaunch") as? Bool ?? true
+        checkDaily = preferences.object(forKey: "updatesCheckDaily") as? Bool ?? true
+        lastCheck = preferences.object(forKey: "updatesLastSuccessfulCheck") as? Date
         if let previousError = preferences.string(forKey: "updateInstallError") {
             error = L10n.tr("A atualização não foi concluída: ") + previousError
             preferences.removeObject(forKey: "updateInstallError")
@@ -60,15 +83,26 @@ struct AppRelease: Decodable {
     }
 
     func start() {
-        timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.check() }
+        guard !started else { return }
+        started = true
+        // Poll the persisted deadline so sleep/wake and preference changes are respected.
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.checkDailyIfDue() }
         }
+        if checkOnLaunch { check() }
+        else { checkDailyIfDue() }
+    }
+    func stop() { started = false; timer?.invalidate(); timer = nil }
+
+    private func checkDailyIfDue() {
+        guard checkDaily, UpdateCheckSchedule.isDue(
+            lastAttempt: preferences.object(forKey: "updatesLastAttempt") as? Date, now: Date()) else { return }
         check()
     }
-    func stop() { timer?.invalidate(); timer = nil }
 
     func check(manual: Bool = false) {
         guard !checking, !installing else { return }
+        preferences.set(Date(), forKey: "updatesLastAttempt")
         checking = true; if manual { error = nil }
         if manual { dismissed = false; detail = "Buscando atualizações…" }
         Task { @MainActor in
@@ -83,7 +117,8 @@ struct AppRelease: Decodable {
                 }
                 let release = try AppRelease.newer(from: data, current: currentVersion)
                 lastCheck = Date()
-                if release?.tag_name != available?.tag_name { dismissed = false }
+                preferences.set(lastCheck, forKey: "updatesLastSuccessfulCheck")
+                if release != nil || release?.tag_name != available?.tag_name { dismissed = false }
                 available = release
                 detail = release == nil ? (manual ? "Você está usando a versão mais recente." : nil) : nil
             } catch {

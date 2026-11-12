@@ -17,6 +17,62 @@ class UpdateService extends ChangeNotifier {
   String? availableVersion;
   String currentVersion = '';
   bool checking = false;
+  bool checkOnLaunch = true;
+  bool checkDaily = true;
+  bool initialized = false;
+  DateTime? lastAttempt;
+  Uri? downloadUrl;
+
+  static bool dailyDue(DateTime? lastAttempt, DateTime now) =>
+      lastAttempt == null ||
+      now.isBefore(lastAttempt) ||
+      now.difference(lastAttempt) >= const Duration(days: 1);
+
+  Future<void> loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    checkOnLaunch = prefs.getBool('updatesCheckOnLaunch') ?? true;
+    checkDaily = prefs.getBool('updatesCheckDaily') ?? true;
+    final timestamp = prefs.getInt('updatesLastAttempt');
+    lastAttempt = timestamp == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(timestamp);
+    initialized = true;
+    notifyListeners();
+  }
+
+  Future<void> start() async {
+    await loadPreferences();
+    currentVersion = (await PackageInfo.fromPlatform()).version;
+    notifyListeners();
+    await initializeNotifications();
+    if (checkOnLaunch) {
+      await check();
+    } else {
+      await checkIfDue();
+    }
+  }
+
+  Future<void> setCheckOnLaunch(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('updatesCheckOnLaunch', value);
+    checkOnLaunch = value;
+    notifyListeners();
+  }
+
+  Future<void> setCheckDaily(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('updatesCheckDaily', value);
+    checkDaily = value;
+    notifyListeners();
+    await checkIfDue();
+  }
+
+  Future<void> checkIfDue() async {
+    if (initialized && checkDaily && dailyDue(lastAttempt, DateTime.now())) {
+      await check();
+    }
+  }
+
   bool notificationReady = false;
   String? error;
   static bool isNewer(String next, String current) {
@@ -99,9 +155,15 @@ class UpdateService extends ChangeNotifier {
   Future<void> check() async {
     if (checking) return;
     checking = true;
+    lastAttempt = DateTime.now();
     error = null;
     notifyListeners();
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(
+        'updatesLastAttempt',
+        lastAttempt!.millisecondsSinceEpoch,
+      );
       final package = await PackageInfo.fromPlatform();
       currentVersion = package.version;
       final response = await http
@@ -124,8 +186,26 @@ class UpdateService extends ChangeNotifier {
           !isNewer(next, currentVersion)) {
         return;
       }
+      if (Platform.isAndroid) {
+        final assets = (release['assets'] as List? ?? []).whereType<Map>();
+        final packages = assets
+            .where((a) => a['name'] == 'VitraRadio-Android.apk')
+            .toList();
+        if (packages.length != 1) return;
+        final url = Uri.tryParse(
+          packages.single['browser_download_url'] as String? ?? '',
+        );
+        if (url == null ||
+            url.scheme != 'https' ||
+            url.host != 'github.com' ||
+            url.userInfo.isNotEmpty ||
+            url.path !=
+                '/$repository/releases/download/$next/VitraRadio-Android.apk') {
+          return;
+        }
+        downloadUrl = url;
+      }
       availableVersion = next;
-      final prefs = await SharedPreferences.getInstance();
       if (notificationReady &&
           prefs.getBool('updateNotifications') == true &&
           prefs.getString('lastUpdateNotice') != next) {
@@ -155,6 +235,8 @@ class UpdateService extends ChangeNotifier {
     }
   }
 
-  Future<void> openRelease() =>
-      launchUrl(releases, mode: LaunchMode.externalApplication).then((_) {});
+  Future<void> openRelease() => launchUrl(
+    downloadUrl ?? releases,
+    mode: LaunchMode.externalApplication,
+  ).then((_) {});
 }

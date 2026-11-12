@@ -24,11 +24,11 @@ struct ClassicRadioView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                sidebar.frame(width: 224)
+                sidebar.frame(width: 244)
                 Rectangle().fill(palette.line).frame(width: 1)
                 if page == .catalog { CatalogView(catalog: catalog) }
                 else if page == .podcasts { PodcastsView() }
-                else if page == .server { MusicServerView(libraryOnly: true) }
+                else if page == .server { MusicServerView() }
                 else if page == .settings { RadioSettingsView() }
                 else if page == .themes { PlayerThemesView() }
                 else if page == .automation { AutomationView() }
@@ -42,7 +42,6 @@ struct ClassicRadioView: View {
         .preferredColorScheme(.dark)
         .frame(minWidth: 1000, minHeight: 710)
         .onChange(of: countries.needsSetup) { value in if !value && radio.favoriteStations.isEmpty { page = .catalog } }
-        .onChange(of: servers.activeProfile?.id) { value in if value == nil && page == .server { page = .settings } }
         .onAppear {
             if CommandLine.arguments.contains("--podcasts-preview") { page = .podcasts }
             if CommandLine.arguments.contains("--settings-preview") { page = .settings }
@@ -68,9 +67,7 @@ struct ClassicRadioView: View {
             navigationButton("Início", symbol: "house.fill", selected: page == .explore) { page = .explore }
             navigationButton("Todas as rádios", symbol: "dot.radiowaves.left.and.right", selected: page == .catalog) { page = .catalog }
             navigationButton("Podcasts", symbol: "mic.fill", selected: page == .podcasts) { page = .podcasts }
-            if servers.activeProfile != nil {
-                navigationButton("Minhas músicas", symbol: "music.note.list", selected: page == .server) { page = .server }
-            }
+            navigationButton("Minhas Músicas", symbol: "music.note.list", selected: page == .server) { page = .server }
             navigationButton("Ajustes", symbol: "gearshape", selected: page == .settings) { page = .settings }
             Rectangle().fill(palette.line).frame(height: 1).padding(.vertical, 14)
             HStack {

@@ -443,5 +443,21 @@
   "Nenhum podcast encontrado.": "No podcasts found.",
   "Experimente outro nome, país ou idioma.": "Try another name, country or language.",
   "PODCAST · REPRODUZINDO": "PODCAST · PLAYING",
-  "Pausar episódio": "Pause episode"
+  "Pausar episódio": "Pause episode",
+  "Minhas Músicas": "My Music",
+  "Pasta deste dispositivo": "Folder on this device",
+  "Servidor de música": "Music server",
+  "Pasta compartilhada na rede": "Shared network folder",
+  "Adicionar minhas músicas": "Add my music",
+  "Endereço da pasta na rede (opcional)": "Network folder address (optional)",
+  "Ouça músicas de uma pasta do dispositivo ou conecte sua biblioteca online.": "Listen to music from a folder on your device or connect your online library.",
+  "Adicione uma pasta de músicas do seu dispositivo ou conecte um servidor. Seus arquivos permanecem onde estão, sem precisar copiar ou enviar.": "Add a music folder from your device or connect a server. Your files stay where they are, with no copying or uploading.",
+  "Escolha uma pasta deste dispositivo. Suas músicas aparecem aqui sem copiar os arquivos. A pasta precisa continuar disponível para tocar.": "Choose a folder on this device. Your music appears here without copying files. Keep the folder available for playback.",
+  "Para uma pasta em outro computador ou dispositivo de armazenamento, abra a conexão no Finder e depois escolha a pasta conectada. O macOS cuida do login.": "For a folder on another computer or storage device, open the connection in Finder, then choose the connected folder. macOS handles sign-in.",
+  "Verificar pasta": "Check folder",
+  "Nome da biblioteca": "Library name",
+  "Escolha quando o Vitra deve buscar novas versões. Quando houver uma atualização, o aviso aparece dentro do app para você decidir quando atualizar.": "Choose when Vitra checks for new versions. When an update is available, an in-app notice lets you decide when to update.",
+  "Verificar ao abrir o app": "Check when the app opens",
+  "Verificar automaticamente uma vez por dia": "Automatically check once a day",
+  "A verificação diária funciona enquanto o app está executando, inclusive com a janela fechada. Nenhuma atualização é instalada sem você confirmar.": "Daily checks run while the app is running, including with the window closed. No update is installed without your confirmation."
 }

@@ -4,7 +4,7 @@ struct RadioSettingsView: View {
     @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @AppStorage("settingsTab") private var tab = "Rádios"
-    private let tabs = ["Rádios", "Servidor", "Temas", "Automação", "Miniplayer", "Atualizações"]
+    private let tabs = ["Rádios", "Temas", "Automação", "Miniplayer", "Atualizações"]
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(L10n.tr("Ajustes")).font(.system(size: 27, weight: .semibold)).padding(.bottom, 18)
@@ -26,11 +26,11 @@ struct RadioSettingsView: View {
                 case "Automação": AutomationView()
                 case "Miniplayer": MiniSettingsView()
                 case "Atualizações": UpdateSettingsView()
-                default: MusicServerView(configurationOnly: true)
+                default: CatalogCountriesView()
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }.padding(.horizontal, 24).padding(.top, 38).foregroundStyle(palette.text)
-            .onAppear { if CommandLine.arguments.contains("--mini-settings-preview") { tab = "Miniplayer" }; if CommandLine.arguments.contains("--updates-preview") { tab = "Atualizações" }; if CommandLine.arguments.contains("--countries-preview") { tab = "Rádios" } }
+            .onAppear { if !tabs.contains(tab) { tab = "Rádios" }; if CommandLine.arguments.contains("--mini-settings-preview") { tab = "Miniplayer" }; if CommandLine.arguments.contains("--updates-preview") { tab = "Atualizações" }; if CommandLine.arguments.contains("--countries-preview") { tab = "Rádios" } }
     }
 }
 

@@ -37,12 +37,20 @@ struct UpdateSettingsView: View {
     @EnvironmentObject private var updates: UpdateChecker
     @Environment(\.appPalette) private var palette
     var body: some View {
+        ScrollView {
         VStack(alignment: .leading, spacing: 18) {
             Image(systemName: "arrow.triangle.2.circlepath.circle").font(.system(size: 38, weight: .light)).foregroundStyle(palette.accent)
             Text(L10n.tr("Sempre na sua frequência.")).font(.system(size: 25, weight: .semibold))
             Text("Vitra Radio \(updates.currentVersion)").font(.system(size: 13, weight: .medium, design: .monospaced)).foregroundStyle(palette.muted)
-            Text(L10n.tr("O Vitra procura novas versões ao abrir e a cada hora. Quando houver uma atualização, o aviso aparece dentro do app. Ao atualizar, ele prepara a nova versão e reinicia automaticamente."))
-                .font(.system(size: 13)).foregroundStyle(palette.muted).lineSpacing(4)
+            Text(L10n.tr("Escolha quando o Vitra deve buscar novas versões. Quando houver uma atualização, o aviso aparece dentro do app para você decidir quando atualizar."))
+                .font(.system(size: 13)).foregroundStyle(palette.muted).lineSpacing(4).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 14) {
+                Toggle(L10n.tr("Verificar ao abrir o app"), isOn: $updates.checkOnLaunch)
+                Toggle(L10n.tr("Verificar automaticamente uma vez por dia"), isOn: $updates.checkDaily)
+                Text(L10n.tr("A verificação diária funciona enquanto o app está executando, inclusive com a janela fechada. Nenhuma atualização é instalada sem você confirmar."))
+                    .font(.system(size: 11)).foregroundStyle(palette.muted).fixedSize(horizontal: false, vertical: true)
+            }.toggleStyle(.switch).tint(palette.accent)
+                .padding(18).background(palette.surface, in: RoundedRectangle(cornerRadius: 14))
             Text(L10n.tr("Suas rádios, favoritas, temas, servidores e automações continuam neste Mac.")).font(.system(size: 12)).foregroundStyle(palette.muted)
             if let date = updates.lastCheck { Text(L10n.tr("Última verificação: \(L10n.date(date))")).font(.system(size: 11)).foregroundStyle(palette.muted) }
             HStack(spacing: 12) {
@@ -52,8 +60,8 @@ struct UpdateSettingsView: View {
                     Button(L10n.tr("Atualizar e reiniciar")) { updates.install() }.buttonStyle(VitraButtonStyle()).disabled(updates.installing)
                 }
             }
-            Spacer()
-        }.padding(28).frame(maxWidth: 720, maxHeight: .infinity, alignment: .topLeading)
+        }.padding(28).frame(maxWidth: 720, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }.scrollIndicators(.hidden)
     }
 }

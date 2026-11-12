@@ -9,7 +9,7 @@ enum MusicServerKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .subsonic: return "Navidrome / Subsonic"
         case .jellyfin: return "Jellyfin"
-        case .folder: return L10n.tr("Pasta / NAS (SMB)")
+        case .folder: return L10n.tr("Pasta compartilhada na rede")
         }
     }
 }
@@ -35,6 +35,8 @@ struct MusicServerProfile: Identifiable, Codable, Equatable {
     var address = ""
     var username = ""
     var folderBookmark: Data?
+    var localFolder: Bool?
+    var isLocalFolder: Bool { kind == .folder && (localFolder ?? address.isEmpty) }
 
     func baseURL() throws -> URL {
         var value = address.trimmingCharacters(in: .whitespacesAndNewlines)

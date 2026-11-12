@@ -26,11 +26,29 @@ enum UpdateTests {
         }
     }
 
-    static func run() -> Int {
+    @MainActor static func run() -> Int {
         var failures = 0
         func check(_ value: Bool, _ label: String) {
             if value { print("PASS: \(label)") } else { print("FAIL: \(label)"); failures += 1 }
         }
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        check(UpdateCheckSchedule.isDue(lastAttempt: nil, now: now), "Primeira verificação diária está disponível")
+        check(!UpdateCheckSchedule.isDue(lastAttempt: now.addingTimeInterval(-86_399), now: now), "Não consulta novamente antes de 24 horas")
+        check(UpdateCheckSchedule.isDue(lastAttempt: now.addingTimeInterval(-86_400), now: now), "Consulta ao completar 24 horas, inclusive após repouso")
+        check(UpdateCheckSchedule.isDue(lastAttempt: now.addingTimeInterval(60), now: now), "Ajuste regressivo do relógio não bloqueia verificações")
+        let domain = "com.vitra.radio.update-policy-tests.\(UUID().uuidString)"
+        let preferences = UserDefaults(suiteName: domain)!
+        defer { preferences.removePersistentDomain(forName: domain) }
+        let automatic = UpdateChecker(preferences: preferences)
+        check(automatic.checkOnLaunch && automatic.checkDaily, "Verificações automáticas são habilitadas inicialmente")
+        automatic.checkOnLaunch = false; automatic.checkDaily = false
+        let disabled = UpdateChecker(preferences: preferences)
+        check(!disabled.checkOnLaunch && !disabled.checkDaily, "Preferências desativadas persistem ao reabrir")
+        disabled.checkDaily = true
+        let dailyOnly = UpdateChecker(preferences: preferences)
+        check(!dailyOnly.checkOnLaunch && dailyOnly.checkDaily, "Verificação diária é independente da abertura")
+        preferences.set(now, forKey: "updatesLastAttempt")
+        check(!UpdateCheckSchedule.isDue(lastAttempt: preferences.object(forKey: "updatesLastAttempt") as? Date, now: now), "Data persistida evita repetir consulta ao reiniciar")
         func rejects(_ label: String, _ operation: () throws -> Void) {
             do { try operation(); check(false, label) } catch { check(true, label) }
         }
