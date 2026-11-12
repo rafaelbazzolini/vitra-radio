@@ -43,12 +43,13 @@ struct RadioView: View {
 }
 
 enum ThemePage: String, CaseIterable, Identifiable {
-    case explore = "Início", catalog = "Todas as rádios", server = "Minhas músicas", themes = "Temas", automation = "Automação", settings = "Ajustes"
+    case explore = "Início", catalog = "Todas as rádios", podcasts = "Podcasts", server = "Minhas músicas", themes = "Temas", automation = "Automação", settings = "Ajustes"
     var id: String { rawValue }
     var icon: String {
         switch self {
         case .explore: return "house.fill"
         case .catalog: return "dot.radiowaves.left.and.right"
+        case .podcasts: return "mic.fill"
         case .server: return "server.rack"
         case .themes: return "paintpalette"
         case .automation: return "calendar.badge.clock"
@@ -89,6 +90,7 @@ struct ThemedRadioWindow: View {
                 if CommandLine.arguments.contains("--automation-preview") { page = .automation }
                 if CommandLine.arguments.contains("--themes-preview") { page = .themes }
                 if CommandLine.arguments.contains("--server-preview") { page = .server }
+                if CommandLine.arguments.contains("--podcasts-preview") { page = .podcasts }
                 if CommandLine.arguments.contains("--settings-preview") { page = .settings }
                 if CommandLine.arguments.contains("--catalog-preview") { page = .catalog }
             }
@@ -119,6 +121,7 @@ struct ThemedRadioWindow: View {
     @ViewBuilder private var workspace: some View {
         switch page {
         case .catalog: CatalogView(catalog: catalog).background(Color(hex: design.panel).opacity(0.35))
+        case .podcasts: PodcastsView()
         case .settings: RadioSettingsView()
         case .server: MusicServerView(libraryOnly: true).background(Color(hex: design.panel).opacity(0.35))
         case .automation: AutomationView().background(Color(hex: design.panel).opacity(0.35))
@@ -165,7 +168,7 @@ struct ThemedRadioWindow: View {
         HStack(spacing: 15) {
             Circle().fill(radio.state.isPlaying ? design.highlight : design.secondary).frame(width: 5, height: 5)
             Text(radio.selected.displayName).font(.system(size: 11, weight: .semibold))
-            Text(L10n.tr(radio.state.label)).font(.system(size: 10)).foregroundStyle(design.secondary)
+            Text(radio.isPodcast && radio.state.isPlaying ? L10n.tr("Reproduzindo") : L10n.tr(radio.state.label)).font(.system(size: 10)).foregroundStyle(design.secondary)
             Spacer()
             TimerMenu()
             AudioBalanceMenu()
@@ -202,7 +205,7 @@ struct ReceiverConsole: View {
                 if skin == .heritage && app.vuStyle == .off { speaker.frame(width: 105) }
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(alignment: .center, spacing: 20) {
-                        Text(radio.selected.isLive ? radio.selected.frequency : "LIBRARY").font(.system(size: skin == .digital ? 34 : 38, weight: .light, design: skin == .heritage ? .serif : .monospaced)).lineLimit(1).minimumScaleFactor(0.65)
+                        Text(radio.selected.isLive ? radio.selected.frequency : (radio.isPodcast ? "PODCAST" : "LIBRARY")).font(.system(size: skin == .digital ? 34 : 38, weight: .light, design: skin == .heritage ? .serif : .monospaced)).lineLimit(1).minimumScaleFactor(0.65)
                         Spacer()
                         if app.vuStyle == .off { Equalizer(running: radio.state.isPlaying, color: design.highlight).frame(width: 45, height: 24) }
                     }.foregroundStyle(design.highlight)

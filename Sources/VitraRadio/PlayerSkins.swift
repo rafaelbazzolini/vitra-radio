@@ -178,12 +178,12 @@ struct SkinnedMiniPlayer: View {
     }
     private var controls: some View {
         HStack(spacing: 3) {
-            control("backward.end.fill", help: "Rádio favorita anterior") { radio.step(-1) }
+            control(radio.isPodcast ? "gobackward.15" : "backward.end.fill", help: radio.isPodcast ? "Voltar 15 segundos" : "Rádio favorita anterior") { radio.step(-1) }
             Button { radio.toggle() } label: {
                 Image(systemName: radio.active ? "pause.fill" : "play.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(design.onAccent)
                     .frame(width: 29, height: 29).background(design.highlight, in: RoundedRectangle(cornerRadius: skin == .digital ? 4 : 15)).contentShape(Rectangle())
             }.buttonStyle(.plain).help(radio.active ? L10n.tr("Pausar") : L10n.tr("Reproduzir"))
-            control("forward.end.fill", help: "Próxima rádio favorita") { radio.step(1) }
+            control(radio.isPodcast ? "goforward.15" : "forward.end.fill", help: radio.isPodcast ? "Avançar 15 segundos" : "Próxima rádio favorita") { radio.step(1) }
         }
     }
     private func control(_ symbol: String, help: String, action: @escaping () -> Void) -> some View {

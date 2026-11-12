@@ -18,6 +18,7 @@ As imagens usam **emissoras fictícias**, somente para demonstração. Não repr
 ![Signal 90: tema digital](docs/images/signal.png)
 ![Automação: programação semanal ou por data específica](docs/images/automation.png)
 ![Primeira abertura: escolha de idioma e países, interface em inglês](docs/images/language-onboarding.png)
+![Podcasts: programa, episódios e favoritos, com conteúdo fictício](docs/images/podcasts.png)
 
 ## Instalação
 
@@ -39,6 +40,7 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 2. Use o coração para montar suas favoritas. **Início** alterna entre **Favoritas** e **Recentes**.
 3. Escolha um tema para mudar a aparência.
 4. Em **Ajustes → Automação**, defina rádio, dias ou uma data completa, início e término.
+5. Em **Podcasts**, busque programas, abra seus episódios ou adicione um RSS. Favoritos e a seção Continuar ficam separados das rádios. Veja o [guia de podcasts](docs/PODCASTS.md).
 
 **A instalação começa vazia:** não há rádios, servidores, credenciais, favoritas ou programações pessoais embutidas. Nenhuma conta do Vitra é necessária. Dados da biblioteca ficam no dispositivo.
 
@@ -49,6 +51,7 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 | Catálogo Radio Browser e stream por URL | Sim | Sim |
 | País sugerido e seleção de vários países | Sim, até oito países ou mundo todo | Filtro Brasil/Mundo |
 | Idioma da interface | pt-BR e en, escolha inicial e troca imediata em Ajustes | Ainda não |
+| Podcasts: busca, RSS, favoritos e retomada | Sim; player e miniplayer, seek de 15 segundos | Ainda não |
 | Favoritas e recentes locais | Sim | Sim |
 | Temas | Layouts próprios: Vitra, Receiver, Studio, Heritage, Signal 90 | Paletas e estilos adaptados à tela |
 | Programação semanal e data específica | Sim, com retomada ao acordar | Sim, enquanto o processo estiver ativo |

@@ -33,6 +33,7 @@ final class DockSidePanel: NSPanel {
 final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, ObservableObject {
     let radio: RadioPlayer
     let servers: MusicServerStore
+    let podcasts: PodcastStore
     let countries: CatalogCountries
     let scheduler: RadioAutomationStore
     @Published var accentColorHex: UInt32? {
@@ -74,6 +75,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         self.preview = preview
         AppLocalization.shared.configure(preferences: preferences, preferred: preview ? (CommandLine.arguments.contains("--english-preview") ? ["en"] : ["pt-BR"]) : Locale.preferredLanguages)
         self.updateChecker = UpdateChecker(preferences: preferences)
+        self.podcasts = PodcastStore(preferences: preferences)
         self.countries = CatalogCountries(preferences: preferences, preview: preview)
         self.scheduler = RadioAutomationStore(preferences: preferences)
         let savedAccent = preferences.object(forKey: "accentColorHex") as? NSNumber
@@ -90,6 +92,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         let defaultSize = isCompact ? CGSize(width: 280, height: 64) : CGSize(width: 326, height: 134)
         miniSize = MiniSizing.clamped(preferences.object(forKey: "miniWidth") == nil ? defaultSize : CGSize(width: preferences.double(forKey: "miniWidth"), height: preferences.double(forKey: "miniHeight")))
         super.init()
+        radio.$podcastEpisode.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.makeMenu() } }.store(in: &subscriptions)
+        radio.onPodcastProgress = { [weak podcasts] id, seconds, completed in podcasts?.record(id: id, seconds: seconds, completed: completed) }
+        if preview && CommandLine.arguments.contains("--podcasts-preview") { podcasts.preview(episodes: CommandLine.arguments.contains("--podcast-episodes-preview")) }
         AppLocalization.shared.$language.dropFirst().sink { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self, self.statusItem != nil else { return }
@@ -272,7 +277,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         mainWindow.isReleasedWhenClosed = false
         mainWindow.backgroundColor = NSColor(red: 0.06, green: 0.08, blue: 0.065, alpha: 1)
         mainWindow.contentMinSize = NSSize(width: 1000, height: 710)
-        mainWindow.contentView = ClickableHostingView(rootView: RadioView().defaultAppStorage(preferences).environment(\.locale, AppLocalization.shared.language.locale).environmentObject(countries).environmentObject(updateChecker).environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
+        mainWindow.contentView = ClickableHostingView(rootView: RadioView().environmentObject(podcasts).defaultAppStorage(preferences).environment(\.locale, AppLocalization.shared.language.locale).environmentObject(countries).environmentObject(updateChecker).environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
         mainWindow.delegate = self
         mainWindow.standardWindowButton(.closeButton)?.target = self
         mainWindow.standardWindowButton(.closeButton)?.action = #selector(hideMainWindow)
@@ -476,7 +481,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
 
     private func menuItem(_ title: String, action: Selector, key: String = "") -> NSMenuItem {
-        let item = NSMenuItem(title: L10n.tr(title), action: action, keyEquivalent: key)
+        let label = radio.isPodcast ? (title == "Rádio anterior" ? "Voltar 15 segundos" : title == "Próxima rádio" ? "Avançar 15 segundos" : title) : title
+        let item = NSMenuItem(title: L10n.tr(label), action: action, keyEquivalent: key)
         item.target = self
         return item
     }

@@ -45,6 +45,14 @@ final class RadioPlayer: ObservableObject {
     private var generation = 0
     private var lastFailure = ""
     private var musicQueue: [Station] = []
+    @Published private(set) var podcastArtwork: URL?
+    @Published private(set) var podcastEpisode: PodcastEpisode?
+    @Published private(set) var elapsed = 0.0
+    @Published private(set) var duration = 0.0
+    var onPodcastProgress: ((String, Double, Bool) -> Void)?
+    private var progressObserver: Any?
+    private var lastProgressSaved = Date.distantPast
+    var isPodcast: Bool { podcastEpisode != nil }
     private var resumePosition = 0.0
     private let updatesSystemMedia: Bool
 
@@ -82,6 +90,7 @@ final class RadioPlayer: ObservableObject {
     }
 
     func select(_ station: Station) {
+        savePodcastProgress(); podcastEpisode = nil; podcastArtwork = nil; elapsed = 0; duration = 0
         playbackIntentID = UUID()
         musicQueue = []
         resumePosition = 0
@@ -96,7 +105,9 @@ final class RadioPlayer: ObservableObject {
 
     func play() {
         guard selected.id != Station.placeholder.id else { return }
+        if isPodcast && wantsPlayback && (state.isPlaying || state.isBusy) { return }
         playbackIntentID = UUID()
+        if let episode = podcastEpisode { onPodcastProgress?(episode.id, resumePosition, false) }
         wantsPlayback = true
         if selected.isLive {
             recentStationIDs.removeAll { $0 == selected.id }
@@ -111,10 +122,12 @@ final class RadioPlayer: ObservableObject {
     }
 
     func pause() {
+        savePodcastProgress()
         playbackIntentID = UUID()
         if !selected.isLive {
             let seconds = player.currentTime().seconds
-            if seconds.isFinite && seconds >= 0 { resumePosition = seconds }
+            if isPodcast { resumePosition = state.isPlaying && seconds.isFinite && seconds >= 0 ? seconds : elapsed }
+            else if seconds.isFinite && seconds >= 0 { resumePosition = seconds }
         }
         wantsPlayback = false
         generation += 1
@@ -126,12 +139,14 @@ final class RadioPlayer: ObservableObject {
     }
 
     func step(_ direction: Int) {
+        if isPodcast { seekPodcast(to: elapsed + Double(direction * 15)); return }
         if !musicQueue.isEmpty {
             let current = musicQueue.firstIndex(where: { $0.id == selected.id }) ?? 0
             playMusic(queue: musicQueue, index: (current + direction + musicQueue.count) % musicQueue.count)
             return
         }
         let queue = favoriteStations.isEmpty ? library : favoriteStations
+        guard !queue.isEmpty else { return }
         let index = queue.firstIndex(where: { $0.id == selected.id })
         let next = index.map { ($0 + direction + queue.count) % queue.count } ?? (direction < 0 ? queue.count - 1 : 0)
         select(queue[next])
@@ -201,11 +216,56 @@ final class RadioPlayer: ObservableObject {
 
     func playMusic(queue: [Station], index: Int) {
         guard queue.indices.contains(index), !queue[index].isLive else { return }
+        savePodcastProgress(); podcastEpisode = nil; podcastArtwork = nil; elapsed = 0; duration = 0
         musicQueue = queue
         resumePosition = 0
         selected = queue[index]
         // URLs autenticadas e arquivos locais nunca entram nas preferências de rádios.
         play()
+    }
+
+    func playPodcast(_ episode: PodcastEpisode, show: PodcastShow, position: Double) {
+        savePodcastProgress()
+        wantsPlayback = false
+        podcastEpisode = episode
+        podcastArtwork = show.artwork
+        musicQueue = []
+        resumePosition = position.isFinite ? max(0, position) : 0
+        elapsed = resumePosition; duration = episode.duration
+        selected = episode.station(show: show)
+        play()
+    }
+
+    func seekPodcast(to seconds: Double) {
+        guard isPodcast, seconds.isFinite, !state.isBusy else { return }
+        let actual = player.currentItem?.duration.seconds ?? 0
+        let limit = actual.isFinite && actual > 0 ? actual : duration
+        let position = max(0, limit > 0 ? min(seconds, max(0, limit - 0.1)) : seconds)
+        resumePosition = position; elapsed = position
+        if player.currentItem?.status == .readyToPlay {
+            player.seek(to: CMTime(seconds: position, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        }
+        savePodcastProgress(position: position); updateSystemMedia()
+    }
+    private func savePodcastProgress(completed: Bool = false, position requested: Double? = nil) {
+        guard let episode = podcastEpisode else { return }
+        let current = player.currentTime().seconds
+        let position = requested ?? (current.isFinite && current >= 0 && player.currentItem?.status == .readyToPlay && state.isPlaying ? current : elapsed)
+        onPodcastProgress?(episode.id, position, completed)
+        lastProgressSaved = Date()
+    }
+    private func observePodcastProgress(generation expected: Int) {
+        guard isPodcast else { return }
+        progressObserver = player.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 600), queue: .main) { [weak self] time in
+            Task { @MainActor [weak self] in
+                guard let self, self.generation == expected, self.isPodcast else { return }
+                let seconds = time.seconds
+                if seconds.isFinite && seconds >= 0 && (seconds > 0 || self.resumePosition == 0) { self.elapsed = seconds }
+                let length = self.player.currentItem?.duration.seconds ?? 0
+                if length.isFinite && length > 0 { self.duration = length }
+                if Date().timeIntervalSince(self.lastProgressSaved) >= 5 { self.savePodcastProgress(); self.updateSystemMedia() }
+            }
+        }
     }
 
     func stopMusic(from serverID: UUID) {
@@ -214,6 +274,7 @@ final class RadioPlayer: ObservableObject {
     }
 
     private func releaseItem() {
+        if let progressObserver { player.removeTimeObserver(progressObserver); self.progressObserver = nil }
         balanceTask?.cancel(); balanceTask = nil
         volumeBalanceStatus = "Aguardando reprodução"
         itemObservation = nil
@@ -248,6 +309,7 @@ final class RadioPlayer: ObservableObject {
 
     private func attachPlaybackItem(_ item: AVPlayerItem, generation currentGeneration: Int) {
         player.replaceCurrentItem(with: item)
+        observePodcastProgress(generation: currentGeneration)
 
         itemObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
@@ -277,7 +339,9 @@ final class RadioPlayer: ObservableObject {
                 let ended = notification.name == AVPlayerItem.didPlayToEndTimeNotification
                 Task { @MainActor [weak self] in
                     guard let self, self.generation == currentGeneration else { return }
-                    if ended && !self.selected.isLive {
+                    if ended && self.isPodcast {
+                        self.pause(); self.savePodcastProgress(completed: true); self.resumePosition = 0; self.elapsed = 0
+                    } else if ended && !self.selected.isLive {
                         if let index = self.musicQueue.firstIndex(where: { $0.id == self.selected.id }), index + 1 < self.musicQueue.count {
                             self.playMusic(queue: self.musicQueue, index: index + 1)
                         } else { self.pause(); self.resumePosition = 0 }
@@ -331,7 +395,9 @@ final class RadioPlayer: ObservableObject {
 
     private func startPreparedPlayback(generation expectedGeneration: Int) {
         if !selected.isLive && resumePosition > 0 {
-            let position = resumePosition
+            let actual = player.currentItem?.duration.seconds ?? 0
+            let position = isPodcast && actual.isFinite && actual > 0 ? min(resumePosition, max(0, actual - 0.1)) : resumePosition
+            if isPodcast { elapsed = position; if actual.isFinite && actual > 0 { duration = actual } }
             resumePosition = 0
             player.seek(to: CMTime(seconds: position, preferredTimescale: 600)) { [weak self] _ in
                 Task { @MainActor [weak self] in
@@ -406,17 +472,39 @@ final class RadioPlayer: ObservableObject {
             }
             remoteTokens.append((command, token))
         }
+        center.skipBackwardCommand.preferredIntervals = [15]
+        center.skipForwardCommand.preferredIntervals = [15]
+        for (command, delta) in [(center.skipBackwardCommand, -15.0), (center.skipForwardCommand, 15.0)] {
+            let token = command.addTarget { [weak self] _ in
+                Task { @MainActor [weak self] in if let self, self.isPodcast { self.seekPodcast(to: self.elapsed + delta) } }
+                return .success
+            }
+            remoteTokens.append((command, token))
+        }
+        let seek = center.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            let position = event.positionTime
+            Task { @MainActor [weak self] in self?.seekPodcast(to: position) }
+            return .success
+        }
+        remoteTokens.append((center.changePlaybackPositionCommand, seek))
     }
 
     private func updateSystemMedia() {
         guard updatesSystemMedia else { return }
         if state == .idle { return }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+        let commands = MPRemoteCommandCenter.shared()
+        commands.skipBackwardCommand.isEnabled = isPodcast && !state.isBusy
+        commands.skipForwardCommand.isEnabled = isPodcast && !state.isBusy
+        commands.changePlaybackPositionCommand.isEnabled = isPodcast && !state.isBusy
+        var info: [String: Any] = [
             MPMediaItemPropertyTitle: selected.name,
             MPMediaItemPropertyArtist: "\(selected.genre) · Vitra Radio",
             MPNowPlayingInfoPropertyIsLiveStream: selected.isLive,
             MPNowPlayingInfoPropertyPlaybackRate: state.isPlaying ? 1.0 : 0.0
         ]
+        if isPodcast { info[MPMediaItemPropertyPlaybackDuration] = duration; info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsed }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
         MPNowPlayingInfoCenter.default().playbackState = state.isPlaying ? .playing : (wantsPlayback ? .interrupted : .paused)
     }
 }

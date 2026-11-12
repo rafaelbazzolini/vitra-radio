@@ -4,7 +4,7 @@ import AppKit
 struct ClassicRadioView: View {
     @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
-    private enum Page { case explore, catalog, server, themes, automation, settings }
+    private enum Page { case explore, catalog, podcasts, server, themes, automation, settings }
     @EnvironmentObject private var radio: RadioPlayer
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var servers: MusicServerStore
@@ -24,9 +24,10 @@ struct ClassicRadioView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                sidebar.frame(width: 208)
+                sidebar.frame(width: 224)
                 Rectangle().fill(palette.line).frame(width: 1)
                 if page == .catalog { CatalogView(catalog: catalog) }
+                else if page == .podcasts { PodcastsView() }
                 else if page == .server { MusicServerView(libraryOnly: true) }
                 else if page == .settings { RadioSettingsView() }
                 else if page == .themes { PlayerThemesView() }
@@ -43,6 +44,7 @@ struct ClassicRadioView: View {
         .onChange(of: countries.needsSetup) { value in if !value && radio.favoriteStations.isEmpty { page = .catalog } }
         .onChange(of: servers.activeProfile?.id) { value in if value == nil && page == .server { page = .settings } }
         .onAppear {
+            if CommandLine.arguments.contains("--podcasts-preview") { page = .podcasts }
             if CommandLine.arguments.contains("--settings-preview") { page = .settings }
             if CommandLine.arguments.contains("--catalog-preview") { page = .catalog }
             if CommandLine.arguments.contains("--server-preview") { page = .server }
@@ -65,6 +67,7 @@ struct ClassicRadioView: View {
                 .foregroundStyle(palette.muted).padding(.leading, 12).padding(.bottom, 13)
             navigationButton("Início", symbol: "house.fill", selected: page == .explore) { page = .explore }
             navigationButton("Todas as rádios", symbol: "dot.radiowaves.left.and.right", selected: page == .catalog) { page = .catalog }
+            navigationButton("Podcasts", symbol: "mic.fill", selected: page == .podcasts) { page = .podcasts }
             if servers.activeProfile != nil {
                 navigationButton("Minhas músicas", symbol: "music.note.list", selected: page == .server) { page = .server }
             }
@@ -211,7 +214,7 @@ struct ClassicRadioView: View {
 
     private var transport: some View {
         HStack(spacing: 18) {
-            StationArtwork(station: radio.selected).frame(width: 48, height: 48).clipShape(RoundedRectangle(cornerRadius: 10))
+            NowPlayingArtwork().frame(width: 48, height: 48).clipShape(RoundedRectangle(cornerRadius: 10))
             VStack(alignment: .leading, spacing: 5) {
                 Text(radio.selected.displayName).font(.system(size: 13, weight: .semibold))
                 PlaybackLabel().font(.system(size: 10))
@@ -394,9 +397,9 @@ struct TransportButtons: View {
     var body: some View {
         HStack(spacing: spacing) {
             Button { radio.step(-1) } label: {
-                Image(systemName: "backward.end.fill").font(.system(size: playSize * 0.31))
+                Image(systemName: radio.isPodcast ? "gobackward.15" : "backward.end.fill").font(.system(size: playSize * 0.31))
                     .frame(width: 24, height: 30).contentShape(Rectangle())
-            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(L10n.tr("Rádio anterior (⌘←)")).accessibilityLabel(L10n.tr("Rádio anterior"))
+            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(radio.isPodcast ? L10n.tr("Voltar 15 segundos") : L10n.tr("Rádio anterior (⌘←)")).accessibilityLabel(radio.isPodcast ? L10n.tr("Voltar 15 segundos") : L10n.tr("Rádio anterior"))
             Button { radio.toggle() } label: {
                 ZStack {
                     Circle().fill(palette.accent)
@@ -404,12 +407,12 @@ struct TransportButtons: View {
                         .font(.system(size: playSize * 0.34, weight: .semibold)).offset(x: radio.active ? 0 : 1)
                         .foregroundStyle(palette.onAccent)
                 }.frame(width: playSize, height: playSize).contentShape(Circle())
-            }.buttonStyle(.plain).help(radio.active ? L10n.tr("Pausar (⌘P)") : L10n.tr("Ouvir ao vivo (⌘P)"))
-                .accessibilityLabel(radio.active ? L10n.tr("Pausar rádio") : L10n.tr("Reproduzir rádio"))
+            }.buttonStyle(.plain).help(radio.isPodcast ? (radio.active ? L10n.tr("Pausar episódio") : L10n.tr("Ouvir episódio")) : (radio.active ? L10n.tr("Pausar (⌘P)") : L10n.tr("Ouvir ao vivo (⌘P)")))
+                .accessibilityLabel(radio.isPodcast ? (radio.active ? L10n.tr("Pausar episódio") : L10n.tr("Ouvir episódio")) : (radio.active ? L10n.tr("Pausar rádio") : L10n.tr("Reproduzir rádio")))
             Button { radio.step(1) } label: {
-                Image(systemName: "forward.end.fill").font(.system(size: playSize * 0.31))
+                Image(systemName: radio.isPodcast ? "goforward.15" : "forward.end.fill").font(.system(size: playSize * 0.31))
                     .frame(width: 24, height: 30).contentShape(Rectangle())
-            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(L10n.tr("Próxima rádio (⌘→)")).accessibilityLabel(L10n.tr("Próxima rádio"))
+            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(radio.isPodcast ? L10n.tr("Avançar 15 segundos") : L10n.tr("Próxima rádio (⌘→)")).accessibilityLabel(radio.isPodcast ? L10n.tr("Avançar 15 segundos") : L10n.tr("Próxima rádio"))
         }
     }
 }
@@ -460,7 +463,7 @@ struct SlimMiniPlayerView: View {
         HStack(spacing: 6) {
             DragHandle().frame(width: 18, height: 28).help(L10n.tr("Mover miniplayer"))
             if app.miniSize.width >= 280 {
-            StationArtwork(station: radio.selected).frame(width: min(40, app.miniSize.height - 14), height: min(40, app.miniSize.height - 14))
+            NowPlayingArtwork().frame(width: min(40, app.miniSize.height - 14), height: min(40, app.miniSize.height - 14))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             VStack(alignment: .leading, spacing: 3) {
@@ -468,16 +471,16 @@ struct SlimMiniPlayerView: View {
                 PlaybackLabel().font(.system(size: 8))
             }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).background { MiniVUBackground() }.layoutPriority(1)
             Button { radio.step(-1) } label: {
-                Image(systemName: "backward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())
-            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(L10n.tr("Rádio favorita anterior ou faixa anterior"))
+                Image(systemName: radio.isPodcast ? "gobackward.15" : "backward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())
+            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(radio.isPodcast ? L10n.tr("Voltar 15 segundos") : L10n.tr("Rádio favorita anterior ou faixa anterior"))
             Button { radio.toggle() } label: {
                 Image(systemName: radio.active ? "pause.fill" : "play.fill").font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(palette.onAccent).frame(width: 30, height: 30)
                     .background(palette.accent, in: Circle()).contentShape(Circle())
             }.buttonStyle(.plain).help(radio.active ? L10n.tr("Pausar") : L10n.tr("Reproduzir"))
             Button { radio.step(1) } label: {
-                Image(systemName: "forward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())
-            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(L10n.tr("Próxima faixa ou rádio"))
+                Image(systemName: radio.isPodcast ? "goforward.15" : "forward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())
+            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(radio.isPodcast ? L10n.tr("Avançar 15 segundos") : L10n.tr("Próxima faixa ou rádio"))
             Menu { MiniContextMenu() } label: {
                 Image(systemName: "ellipsis").font(.system(size: 12, weight: .bold)).frame(width: 20, height: 28).contentShape(Rectangle())
             }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.tr("Tamanho, Dock e opções"))
@@ -571,7 +574,7 @@ struct RegularMiniPlayerView: View {
                     .buttonStyle(.plain).foregroundStyle(palette.muted).help(L10n.tr("Ocultar miniplayer; a rádio continua tocando"))
             }
             HStack(spacing: 9) {
-                StationArtwork(station: radio.selected).frame(width: showDetails ? 43 : 35, height: showDetails ? 43 : 35)
+                NowPlayingArtwork().frame(width: showDetails ? 43 : 35, height: showDetails ? 43 : 35)
                     .clipShape(RoundedRectangle(cornerRadius: 9))
                 VStack(alignment: .leading, spacing: 5) {
                     Text(radio.selected.displayName).font(.system(size: showDetails ? 13 : 11, weight: .semibold)).lineLimit(1)
@@ -579,15 +582,15 @@ struct RegularMiniPlayerView: View {
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4).background { MiniVUBackground() }
                 if !showDetails {
             Button { radio.step(-1) } label: {
-                Image(systemName: "backward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())
-            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(L10n.tr("Rádio favorita anterior ou faixa anterior"))
+                Image(systemName: radio.isPodcast ? "gobackward.15" : "backward.end.fill").font(.system(size: 10)).frame(width: 24, height: 30).contentShape(Rectangle())
+            }.buttonStyle(.plain).foregroundStyle(palette.muted).help(radio.isPodcast ? L10n.tr("Voltar 15 segundos") : L10n.tr("Rádio favorita anterior ou faixa anterior"))
                     Button { radio.toggle() } label: {
                         Image(systemName: radio.active ? "pause.fill" : "play.fill").font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(palette.onAccent).frame(width: 31, height: 31).background(palette.accent, in: Circle())
                             .contentShape(Circle())
                     }.buttonStyle(.plain).help(radio.active ? L10n.tr("Pausar") : L10n.tr("Reproduzir"))
                     Button { radio.step(1) } label: {
-                        Image(systemName: "forward.end.fill").font(.system(size: 10)).frame(width: 24, height: 31).contentShape(Rectangle())
+                        Image(systemName: radio.isPodcast ? "goforward.15" : "forward.end.fill").font(.system(size: 10)).frame(width: 24, height: 31).contentShape(Rectangle())
                     }
                         .buttonStyle(.plain).foregroundStyle(palette.muted).help(L10n.tr("Próxima rádio"))
                 } else {

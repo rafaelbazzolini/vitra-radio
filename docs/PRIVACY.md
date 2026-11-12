@@ -11,6 +11,7 @@ A distribuição pública inicia sem rádios, favoritas, histórico, automaçõe
 ## Conexões externas
 
 - Radio Browser recebe termos de pesquisa e os países selecionados para o catálogo. A sugestão inicial de país usa a região do macOS localmente, sem GPS ou consulta de IP a um serviço de geolocalização. A seleção é guardada nas preferências deste Mac.
+- Apple recebe os termos de busca de podcasts e o país escolhido no catálogo. O autor do podcast recebe consultas de RSS, capas e conexões de áudio. Favoritos, último episódio e progresso ficam nas preferências locais, separados das rádios. Feeds privados com tokens também ficam nessas preferências; não compartilhe exports.
 - A emissora/servidor recebe a conexão de áudio, incluindo IP e dados normais de rede.
 - GitHub recebe consultas de versões (`/releases/latest`) e downloads que o usuário solicitar.
 - Tailscale é configurado pelo usuário no sistema; o Vitra apenas usa uma URL alcançável. O projeto não recebe credenciais de Tailscale.

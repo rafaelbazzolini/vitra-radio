@@ -23,6 +23,14 @@ struct VitraRadioMain {
             application.run()
             return
         }
+        if CommandLine.arguments.contains("--verify-podcast-playback") || CommandLine.arguments.contains("--verify-podcast-network") {
+            let application = NSApplication.shared
+            application.setActivationPolicy(.prohibited)
+            if CommandLine.arguments.contains("--verify-podcast-playback") { PodcastTests.playback() }
+            else { PodcastTests.network() }
+            application.run()
+            return
+        }
         if CommandLine.arguments.contains("--verify-playback") {
             let application = NSApplication.shared
             application.setActivationPolicy(.prohibited)
