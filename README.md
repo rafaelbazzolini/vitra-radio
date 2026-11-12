@@ -7,7 +7,7 @@
 
 [Baixar versões](https://github.com/rafaelbazzolini/vitra-radio/releases/latest) · [Builds](https://github.com/rafaelbazzolini/vitra-radio/actions) · [Privacidade](docs/PRIVACY.md) · [Como contribuir](CONTRIBUTING.md)
 
-> O repositório contém um app nativo de macOS e uma edição compartilhada em Flutter. A matriz abaixo distingue os recursos de cada edição. Builds só são anunciados como disponíveis quando a workflow da release termina. O build iOS sem assinatura não pode ser instalado em um iPhone.
+> O repositório contém um app nativo de macOS e uma edição compartilhada em Flutter. A matriz abaixo distingue os recursos de cada edição. Consulte as notas de cada release para saber quais pacotes foram compilados e como foram verificados. O build iOS sem assinatura não pode ser instalado em um iPhone.
 
 ## Telas
 
@@ -17,6 +17,7 @@ As imagens usam **emissoras fictícias**, somente para demonstração. Não repr
 ![Heritage: receptor com acabamento de rádio e medidores](docs/images/heritage.png)
 ![Signal 90: tema digital](docs/images/signal.png)
 ![Automação: programação semanal ou por data específica](docs/images/automation.png)
+![Primeira abertura: escolha de idioma e países, interface em inglês](docs/images/language-onboarding.png)
 
 ## Instalação
 
@@ -34,7 +35,7 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 
 ## Começar a ouvir
 
-1. Na primeira abertura do macOS, confirme o país sugerido pela região do sistema ou selecione outros países. Em **Todas as rádios**, pesquise no catálogo Radio Browser ou altere os países pelo botão do globo. A seleção permite até oito países ou o mundo todo.
+1. Na primeira abertura do macOS, escolha **Português (Brasil)** ou **English** junto do país sugerido pela região do sistema, ou selecione outros países. Em **Todas as rádios**, pesquise no catálogo Radio Browser ou altere os países pelo botão do globo. A seleção permite até oito países ou o mundo todo.
 2. Use o coração para montar suas favoritas. **Início** alterna entre **Favoritas** e **Recentes**.
 3. Escolha um tema para mudar a aparência.
 4. Em **Ajustes → Automação**, defina rádio, dias ou uma data completa, início e término.
@@ -47,6 +48,7 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 |---|---|---|
 | Catálogo Radio Browser e stream por URL | Sim | Sim |
 | País sugerido e seleção de vários países | Sim, até oito países ou mundo todo | Filtro Brasil/Mundo |
+| Idioma da interface | pt-BR e en, escolha inicial e troca imediata em Ajustes | Ainda não |
 | Favoritas e recentes locais | Sim | Sim |
 | Temas | Layouts próprios: Vitra, Receiver, Studio, Heritage, Signal 90 | Paletas e estilos adaptados à tela |
 | Programação semanal e data específica | Sim, com retomada ao acordar | Sim, enquanto o processo estiver ativo |
@@ -65,7 +67,7 @@ Fechar a janela do app nativo mantém o áudio e a barra de menus. **Encerrar**,
 
 ### Países e apoio ao projeto
 
-No macOS nativo, a região do sistema sugere um país na primeira abertura, sem GPS ou geolocalização por IP. O usuário confirma a sugestão, seleciona vários países ou escolhe o mundo todo. Os resultados são intercalados e a paginação é independente por país. A escolha fica em Ajustes → Rádios e pode ser alterada a qualquer momento.
+No macOS nativo, a região do sistema sugere um país na primeira abertura, sem GPS ou geolocalização por IP. O usuário confirma a sugestão, seleciona vários países ou escolhe o mundo todo. Os resultados são intercalados e a paginação é independente por país. Idioma e países ficam em **Ajustes → Idioma e região** e podem ser alterados a qualquer momento. O idioma é sugerido pela preferência do sistema na primeira abertura; a escolha salva prevalece nas próximas aberturas. O idioma é independente dos países e a troca não reinicia o player.
 
 O botão **Apoiar** aparece no cabeçalho. O destino de contribuição é configurado em [packaging/support.json](packaging/support.json); enquanto não houver um link HTTPS confirmado, a tela informa que as doações ainda estão sendo preparadas e não oferece cobrança. Consulte [Apoio ao projeto](docs/SUPPORT.md).
 

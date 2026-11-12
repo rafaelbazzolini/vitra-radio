@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 
 struct MusicServerView: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var servers: MusicServerStore
     @EnvironmentObject private var radio: RadioPlayer
@@ -16,13 +17,13 @@ struct MusicServerView: View {
                 if !libraryOnly {
                     HStack {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("SUA BIBLIOTECA. EM QUALQUER LUGAR.").font(.system(size: 9, weight: .bold)).tracking(1.6).foregroundStyle(palette.muted)
-                            Text("Meu servidor.").font(.system(size: 29, weight: .semibold)).tracking(-1.1)
-                            Text("Conecte sua música por Tailscale, rede local ou internet.").font(.system(size: 12)).foregroundStyle(palette.muted)
+                            Text(L10n.tr("SUA BIBLIOTECA. EM QUALQUER LUGAR.")).font(.system(size: 9, weight: .bold)).tracking(1.6).foregroundStyle(palette.muted)
+                            Text(L10n.tr("Meu servidor.")).font(.system(size: 29, weight: .semibold)).tracking(-1.1)
+                            Text(L10n.tr("Conecte sua música por Tailscale, rede local ou internet.")).font(.system(size: 12)).foregroundStyle(palette.muted)
                         }
                         Spacer()
                         Button { editing = MusicServerProfile() } label: {
-                            Label("Adicionar", systemImage: "plus").font(.system(size: 12, weight: .semibold))
+                            Label(L10n.tr("Adicionar"), systemImage: "plus").font(.system(size: 12, weight: .semibold))
                                 .padding(.horizontal, 15).padding(.vertical, 11).foregroundStyle(palette.onAccent)
                                 .background(palette.accent, in: Capsule()).contentShape(Capsule())
                         }.buttonStyle(.plain)
@@ -35,11 +36,11 @@ struct MusicServerView: View {
                     }
                 }
                 if let error = servers.error {
-                    Label(error, systemImage: "exclamationmark.circle").font(.system(size: 12)).foregroundStyle(.orange)
+                    Label(L10n.tr(error), systemImage: "exclamationmark.circle").font(.system(size: 12)).foregroundStyle(.orange)
                         .padding(15).frame(maxWidth: .infinity, alignment: .leading).background(palette.surface, in: RoundedRectangle(cornerRadius: 12))
                 }
                 if servers.isWorking {
-                    HStack(spacing: 10) { ProgressView().controlSize(.small); Text("Conectando à sua biblioteca…").font(.system(size: 12)).foregroundStyle(palette.muted) }
+                    HStack(spacing: 10) { ProgressView().controlSize(.small); Text(L10n.tr("Conectando à sua biblioteca…")).font(.system(size: 12)).foregroundStyle(palette.muted) }
                         .frame(maxWidth: .infinity).padding(.vertical, 25)
                 }
                 if !configurationOnly, let profile = servers.activeProfile { library(profile) }
@@ -51,15 +52,15 @@ struct MusicServerView: View {
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 17) {
             Image(systemName: "externaldrive").font(.system(size: 36, weight: .light)).foregroundStyle(palette.accent)
-            Text("Sua coleção merece um lugar aqui.").font(.system(size: 22, weight: .medium)).tracking(-0.6)
-            Text("Escolha o serviço, informe o endereço e teste a conexão. Cada pessoa configura o próprio servidor; suas credenciais ficam no Chaves do macOS.")
+            Text(L10n.tr("Sua coleção merece um lugar aqui.")).font(.system(size: 22, weight: .medium)).tracking(-0.6)
+            Text(L10n.tr("Escolha o serviço, informe o endereço e teste a conexão. Cada pessoa configura o próprio servidor; suas credenciais ficam no Chaves do macOS."))
                 .font(.system(size: 13)).foregroundStyle(palette.muted).lineSpacing(4)
             HStack(spacing: 18) {
                 Label("Navidrome / Subsonic", systemImage: "music.note.list")
                 Label("Jellyfin", systemImage: "play.rectangle")
-                Label("Pasta / NAS", systemImage: "folder")
+                Label(L10n.tr("Pasta / NAS"), systemImage: "folder")
             }.font(.system(size: 11)).foregroundStyle(palette.muted)
-            Button("Configurar meu servidor") { editing = MusicServerProfile() }
+            Button(L10n.tr("Configurar meu servidor")) { editing = MusicServerProfile() }
                 .buttonStyle(.bordered).tint(palette.accent)
         }.padding(28).frame(maxWidth: .infinity, alignment: .leading)
             .background(LinearGradient(colors: [palette.accent.opacity(0.13), palette.surface], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 18))
@@ -76,17 +77,17 @@ struct MusicServerView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(profile.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(palette.text).lineLimit(1)
                         Text("\(profile.kind.title) · \(profile.network.title)").font(.system(size: 10)).foregroundStyle(palette.muted).lineLimit(1)
-                        if servers.activeProfile?.id == profile.id { Text("Conectado").font(.system(size: 10)).foregroundStyle(palette.accent) }
+                        if servers.activeProfile?.id == profile.id { Text(L10n.tr("Conectado")).font(.system(size: 10)).foregroundStyle(palette.accent) }
                     }
                     Spacer(minLength: 0)
                 }.padding(.vertical, 15).padding(.leading, 15).contentShape(Rectangle())
             }.buttonStyle(.plain).disabled(servers.isWorking)
             Menu {
-                Button("Editar conexão") { editing = profile }
+                Button(L10n.tr("Editar conexão")) { editing = profile }
                 if servers.activeProfile?.id == profile.id {
-                    Button("Desconectar") { radio.stopMusic(from: profile.id); servers.disconnect() }
+                    Button(L10n.tr("Desconectar")) { radio.stopMusic(from: profile.id); servers.disconnect() }
                 }
-                Button("Remover conexão", role: .destructive) { radio.stopMusic(from: profile.id); servers.remove(profile) }
+                Button(L10n.tr("Remover conexão"), role: .destructive) { radio.stopMusic(from: profile.id); servers.remove(profile) }
             } label: { Image(systemName: "ellipsis").frame(width: 22, height: 30).contentShape(Rectangle()) }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().padding(.trailing, 10)
         }.background(palette.surface, in: RoundedRectangle(cornerRadius: 12))
@@ -95,24 +96,24 @@ struct MusicServerView: View {
     @ViewBuilder private func library(_ profile: MusicServerProfile) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(servers.currentAlbum?.title ?? "Sua biblioteca").font(.system(size: 18, weight: .semibold))
+                Text(servers.currentAlbum?.title ?? L10n.tr("Sua biblioteca")).font(.system(size: 18, weight: .semibold))
                 Text(servers.currentAlbum?.artist ?? profile.name).font(.system(size: 11)).foregroundStyle(palette.muted)
             }
             Spacer()
             if servers.showingTracks && profile.kind != .folder {
-                Button("Ver álbuns") { search = ""; servers.showAlbums() }.buttonStyle(.plain).foregroundStyle(palette.accent).font(.system(size: 12))
+                Button(L10n.tr("Ver álbuns")) { search = ""; servers.showAlbums() }.buttonStyle(.plain).foregroundStyle(palette.accent).font(.system(size: 12))
             }
         }
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass").foregroundStyle(palette.muted)
-            TextField("Buscar músicas na biblioteca…", text: $search).textFieldStyle(.plain).font(.system(size: 13))
+            TextField(L10n.tr("Buscar músicas na biblioteca…"), text: $search).textFieldStyle(.plain).font(.system(size: 13))
                 .onSubmit { Task { await servers.search(search) } }
-            Button("Buscar") { Task { await servers.search(search) } }.buttonStyle(.bordered).tint(palette.accent).disabled(servers.isWorking)
+            Button(L10n.tr("Buscar")) { Task { await servers.search(search) } }.buttonStyle(.bordered).tint(palette.accent).disabled(servers.isWorking)
         }.padding(12).background(palette.surface, in: RoundedRectangle(cornerRadius: 10))
 
         if servers.showingTracks {
             if servers.tracks.isEmpty && !servers.isWorking {
-                Text("Nenhuma faixa encontrada. Tente outro nome ou escolha outra pasta.").font(.system(size: 12)).foregroundStyle(palette.muted).padding(.vertical, 20)
+                Text(L10n.tr("Nenhuma faixa encontrada. Tente outro nome ou escolha outra pasta.")).font(.system(size: 12)).foregroundStyle(palette.muted).padding(.vertical, 20)
             }
             LazyVStack(spacing: 0) {
                 ForEach(Array(servers.tracks.enumerated()), id: \.element.id) { index, track in
@@ -133,10 +134,10 @@ struct MusicServerView: View {
                     Rectangle().fill(palette.line).frame(height: 1)
                 }
             }
-            Text(profile.kind == .folder ? "Até 5.000 arquivos por pasta. Para coleções maiores, use um servidor de música." : "A busca mostra até 100 faixas por vez. Refine pelo nome para encontrar mais.")
+            Text(profile.kind == .folder ? L10n.tr("Até 5.000 arquivos por pasta. Para coleções maiores, use um servidor de música.") : L10n.tr("A busca mostra até 100 faixas por vez. Refine pelo nome para encontrar mais."))
                 .font(.system(size: 10)).foregroundStyle(palette.muted)
         } else {
-            if servers.albums.isEmpty && !servers.isWorking { Text("Nenhum álbum disponível para esta conta.").foregroundStyle(palette.muted).font(.system(size: 12)) }
+            if servers.albums.isEmpty && !servers.isWorking { Text(L10n.tr("Nenhum álbum disponível para esta conta.")).foregroundStyle(palette.muted).font(.system(size: 12)) }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 14)], spacing: 16) {
                 ForEach(servers.albums) { album in
                     Button { Task { await servers.openAlbum(album) } } label: {
@@ -151,12 +152,13 @@ struct MusicServerView: View {
                     }.buttonStyle(.plain).disabled(servers.isWorking)
                 }
             }
-            if servers.hasMoreAlbums { Button("Carregar mais álbuns") { Task { await servers.loadMoreAlbums() } }.buttonStyle(.bordered).tint(palette.accent).disabled(servers.isWorking) }
+            if servers.hasMoreAlbums { Button(L10n.tr("Carregar mais álbuns")) { Task { await servers.loadMoreAlbums() } }.buttonStyle(.bordered).tint(palette.accent).disabled(servers.isWorking) }
         }
     }
 }
 
 struct MusicServerForm: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var servers: MusicServerStore
     @EnvironmentObject private var radio: RadioPlayer
@@ -174,55 +176,55 @@ struct MusicServerForm: View {
         VStack(alignment: .leading, spacing: 19) {
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Conectar minha música").font(.system(size: 23, weight: .semibold)).tracking(-0.7)
-                    Text("Configure uma vez. Sua biblioteca fica por perto.").font(.system(size: 12)).foregroundStyle(palette.muted)
+                    Text(L10n.tr("Conectar minha música")).font(.system(size: 23, weight: .semibold)).tracking(-0.7)
+                    Text(L10n.tr("Configure uma vez. Sua biblioteca fica por perto.")).font(.system(size: 12)).foregroundStyle(palette.muted)
                 }
                 Spacer()
                 Button { dismiss() } label: { Image(systemName: "xmark").frame(width: 26, height: 26).contentShape(Rectangle()) }.buttonStyle(.plain).disabled(testing || servers.isWorking)
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 17) {
-                    field("Nome da conexão") { TextField("Minha biblioteca", text: $draft.name) }
-                    field("Tipo de servidor") { Picker("Tipo de servidor", selection: $draft.kind) { ForEach(MusicServerKind.allCases) { Text($0.title).tag($0) } }.labelsHidden() }
+                    field("Nome da conexão") { TextField(L10n.tr("Minha biblioteca"), text: $draft.name) }
+                    field("Tipo de servidor") { Picker(L10n.tr("Tipo de servidor"), selection: $draft.kind) { ForEach(MusicServerKind.allCases) { Text(L10n.tr($0.title)).tag($0) } }.labelsHidden() }
                     field("Como você acessa?") {
-                        Picker("Rede", selection: $draft.network) { ForEach(MusicNetwork.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented).labelsHidden()
+                        Picker(L10n.tr("Rede"), selection: $draft.network) { ForEach(MusicNetwork.allCases) { Text(L10n.tr($0.title)).tag($0) } }.pickerStyle(.segmented).labelsHidden()
                     }
-                    Text(draft.network.help).font(.system(size: 11)).foregroundStyle(palette.muted).fixedSize(horizontal: false, vertical: true)
+                    Text(L10n.tr(draft.network.help)).font(.system(size: 11)).foregroundStyle(palette.muted).fixedSize(horizontal: false, vertical: true)
                     if draft.kind == .folder {
                         field("Compartilhamento SMB (opcional)") {
                             HStack {
                                 TextField("smb://meu-servidor/Musicas", text: $draft.address)
-                                Button("Abrir no Finder") { openSMB() }.buttonStyle(.bordered)
+                                Button(L10n.tr("Abrir no Finder")) { openSMB() }.buttonStyle(.bordered)
                             }
                         }
                         field("Pasta de música") {
                             HStack {
-                                Text(folderName.isEmpty ? (draft.folderBookmark == nil ? "Nenhuma pasta selecionada" : "Pasta salva nesta conexão") : folderName)
+                                Text(folderName.isEmpty ? (draft.folderBookmark == nil ? L10n.tr("Nenhuma pasta selecionada") : L10n.tr("Pasta salva nesta conexão")) : folderName)
                                     .font(.system(size: 12)).foregroundStyle(palette.muted).lineLimit(1).truncationMode(.middle)
                                 Spacer()
-                                Button("Escolher pasta…") { chooseFolder() }.buttonStyle(.bordered)
+                                Button(L10n.tr("Escolher pasta…")) { chooseFolder() }.buttonStyle(.bordered)
                             }
                         }
-                        Text("Se for um NAS, conecte-o pelo Finder e escolha a pasta montada. A autenticação SMB é feita pelo macOS.").font(.system(size: 11)).foregroundStyle(palette.muted)
+                        Text(L10n.tr("Se for um NAS, conecte-o pelo Finder e escolha a pasta montada. A autenticação SMB é feita pelo macOS.")).font(.system(size: 11)).foregroundStyle(palette.muted)
                     } else {
-                        field("Endereço do servidor") { TextField(addressPlaceholder, text: $draft.address) }
-                        Text("Inclua a porta e, se houver, o caminho do serviço. Não use a página de login ou /web.").font(.system(size: 11)).foregroundStyle(palette.muted)
-                        field("Usuário") { TextField("Seu usuário no servidor", text: $draft.username) }
-                        field("Senha") { SecureField(servers.profiles.contains(where: { $0.id == draft.id }) ? "Deixe em branco para manter a credencial salva" : "Sua senha no servidor", text: $password) }
-                        Label("Credenciais guardadas no Chaves do macOS.", systemImage: "lock").font(.system(size: 11)).foregroundStyle(palette.muted)
+                        field("Endereço do servidor") { TextField(L10n.tr(addressPlaceholder), text: $draft.address) }
+                        Text(L10n.tr("Inclua a porta e, se houver, o caminho do serviço. Não use a página de login ou /web.")).font(.system(size: 11)).foregroundStyle(palette.muted)
+                        field("Usuário") { TextField(L10n.tr("Seu usuário no servidor"), text: $draft.username) }
+                        field("Senha") { SecureField(servers.profiles.contains(where: { $0.id == draft.id }) ? L10n.tr("Deixe em branco para manter a credencial salva") : L10n.tr("Sua senha no servidor"), text: $password) }
+                        Label(L10n.tr("Credenciais guardadas no Chaves do macOS."), systemImage: "lock").font(.system(size: 11)).foregroundStyle(palette.muted)
                     }
                     if let message {
-                        Label(message, systemImage: success ? "checkmark.circle" : "exclamationmark.circle")
+                        Label(L10n.tr(message), systemImage: success ? "checkmark.circle" : "exclamationmark.circle")
                             .font(.system(size: 12)).foregroundStyle(success ? palette.accent : .orange).fixedSize(horizontal: false, vertical: true)
                     }
                 }.textFieldStyle(.roundedBorder).controlSize(.large).disabled(testing || servers.isWorking)
             }.scrollIndicators(.hidden)
             HStack(spacing: 12) {
-                Button("Cancelar") { dismiss() }.buttonStyle(.plain).foregroundStyle(palette.muted).disabled(testing || servers.isWorking)
+                Button(L10n.tr("Cancelar")) { dismiss() }.buttonStyle(.plain).foregroundStyle(palette.muted).disabled(testing || servers.isWorking)
                 Spacer()
                 if testing || servers.isWorking { ProgressView().controlSize(.small) }
-                Button("Testar conexão") { testConnection() }.buttonStyle(.bordered).disabled(testing || servers.isWorking)
-                Button("Salvar e abrir") {
+                Button(L10n.tr("Testar conexão")) { testConnection() }.buttonStyle(.bordered).disabled(testing || servers.isWorking)
+                Button(L10n.tr("Salvar e abrir")) {
                     Task {
                         if servers.activeProfile?.id == draft.id { radio.stopMusic(from: draft.id) }
                         if await servers.saveAndConnect(draft, password: password) { password = ""; dismiss() }
@@ -241,7 +243,7 @@ struct MusicServerForm: View {
         return draft.kind == .jellyfin ? "http://meu-servidor:8096" : "http://meu-servidor:4533"
     }
     private func field<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 7) { Text(title).font(.system(size: 12, weight: .medium)); content() }
+        VStack(alignment: .leading, spacing: 7) { Text(L10n.tr(title)).font(.system(size: 12, weight: .medium)); content() }
     }
     private func testConnection() {
         testing = true; message = nil

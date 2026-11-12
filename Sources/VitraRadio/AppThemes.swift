@@ -21,6 +21,7 @@ extension EnvironmentValues {
 }
 
 struct RadioView: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @EnvironmentObject private var countries: CatalogCountries
     @EnvironmentObject private var app: AppController
     var body: some View {
@@ -30,11 +31,11 @@ struct RadioView: View {
                 if app.playerSkin == .vitra { ClassicRadioView() }
                 else { ThemedRadioWindow(skin: app.playerSkin) }
             }
-        }.environment(\.appPalette, AppPalette(skin: app.playerSkin, accentOverride: app.accentColorHex))
+        }.environment(\.locale, localization.language.locale).environment(\.appPalette, AppPalette(skin: app.playerSkin, accentOverride: app.accentColorHex))
             .environment(\.colorScheme, app.playerSkin == .studio ? .light : .dark)
             .tint(app.playerSkin.design.overridingAccent(app.accentColorHex).highlight)
             .sheet(isPresented: Binding(get: { countries.needsSetup }, set: { _ in })) {
-                CatalogCountriesView(onboarding: true).frame(width: 620, height: 680)
+                CatalogCountriesView(onboarding: true).frame(width: 620, height: 720)
                     .environment(\.appPalette, AppPalette(skin: app.playerSkin, accentOverride: app.accentColorHex))
                     .interactiveDismissDisabled()
             }
@@ -57,6 +58,7 @@ enum ThemePage: String, CaseIterable, Identifiable {
 }
 
 struct ThemedRadioWindow: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var radio: RadioPlayer
@@ -94,7 +96,7 @@ struct ThemedRadioWindow: View {
     private var titlebar: some View {
         HStack(spacing: 14) {
             Text("vitra").font(.system(size: 24, weight: .bold, design: skin == .heritage ? .serif : .rounded))
-            Text(design.name.uppercased()).font(.system(size: 10, weight: .semibold, design: .monospaced)).tracking(3).foregroundStyle(design.highlight)
+            Text(L10n.tr(design.name.uppercased())).font(.system(size: 10, weight: .semibold, design: .monospaced)).tracking(3).foregroundStyle(design.highlight)
             Spacer()
             if skin == .digital { Text("NETWORK AUDIO RECEIVER / 01").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundStyle(design.secondary) }
             SupportProjectButton()
@@ -106,7 +108,7 @@ struct ThemedRadioWindow: View {
     }
     private func navigation(_ tab: ThemePage) -> some View {
         Button { page = tab } label: {
-            Label(tab.rawValue, systemImage: tab.icon).font(.system(size: 11, weight: .semibold, design: design.mono ? .monospaced : .default))
+            Label(L10n.tr(tab.rawValue), systemImage: tab.icon).font(.system(size: 11, weight: .semibold, design: design.mono ? .monospaced : .default))
                 .padding(.horizontal, 12).padding(.vertical, 10).frame(alignment: .leading)
                 .foregroundStyle(page == tab ? design.highlight : design.secondary)
                 .background(page == tab ? Color(hex: design.panel) : .clear, in: RoundedRectangle(cornerRadius: skin == .digital ? 3 : 8))
@@ -135,9 +137,9 @@ struct ThemedRadioWindow: View {
             HStack {
                 HomeRadioTabs(selection: $radioSection)
                 Spacer()
-                TextField("Buscar", text: $search).textFieldStyle(.plain).font(.system(size: 11)).frame(width: 95).padding(8).background(Color(hex: design.panel), in: RoundedRectangle(cornerRadius: 5))
+                TextField(L10n.tr("Buscar"), text: $search).textFieldStyle(.plain).font(.system(size: 11)).frame(width: 95).padding(8).background(Color(hex: design.panel), in: RoundedRectangle(cornerRadius: 5))
             }.foregroundStyle(design.secondary)
-            if stations.isEmpty { Text(search.isEmpty ? (radioSection == .favorites ? "Adicione favoritas pelo coração de cada rádio." : "As rádios que você ouvir aparecerão aqui, em ordem de reprodução.") : "Nenhuma rádio encontrada.").font(.system(size: 12)).foregroundStyle(design.secondary).padding(.vertical, 20) }
+            if stations.isEmpty { Text(search.isEmpty ? (radioSection == .favorites ? L10n.tr("Adicione favoritas pelo coração de cada rádio.") : L10n.tr("As rádios que você ouvir aparecerão aqui, em ordem de reprodução.")) : L10n.tr("Nenhuma rádio encontrada.")).font(.system(size: 12)).foregroundStyle(design.secondary).padding(.vertical, 20) }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 9) {
                 ForEach(Array(stations.enumerated()), id: \.element.id) { index, station in
                     HStack(spacing: 0) {
@@ -146,7 +148,7 @@ struct ThemedRadioWindow: View {
                                 Text(String(format: "%02d", index + 1)).font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(design.highlight).frame(width: 23)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(station.name).font(.system(size: 13, weight: .semibold, design: design.mono ? .monospaced : .default)).foregroundStyle(design.ink).lineLimit(1)
-                                    Text(station.frequency + " · " + station.genre).font(.system(size: 9)).foregroundStyle(design.secondary).lineLimit(1)
+                                    Text(station.frequency + " · " + station.displayGenre).font(.system(size: 9)).foregroundStyle(design.secondary).lineLimit(1)
                                 }
                                 Spacer(minLength: 3)
                                 Image(systemName: station == radio.selected && radio.active ? "waveform" : "play.fill").font(.system(size: 11)).foregroundStyle(design.highlight)
@@ -162,18 +164,19 @@ struct ThemedRadioWindow: View {
     private var footer: some View {
         HStack(spacing: 15) {
             Circle().fill(radio.state.isPlaying ? design.highlight : design.secondary).frame(width: 5, height: 5)
-            Text(radio.selected.name).font(.system(size: 11, weight: .semibold))
-            Text(radio.state.label).font(.system(size: 10)).foregroundStyle(design.secondary)
+            Text(radio.selected.displayName).font(.system(size: 11, weight: .semibold))
+            Text(L10n.tr(radio.state.label)).font(.system(size: 10)).foregroundStyle(design.secondary)
             Spacer()
             TimerMenu()
             AudioBalanceMenu()
-            Button { radio.muted.toggle() } label: { Image(systemName: radio.muted ? "speaker.slash.fill" : "speaker.wave.2.fill").frame(width: 26, height: 26).contentShape(Rectangle()) }.buttonStyle(.plain).help("Silenciar")
+            Button { radio.muted.toggle() } label: { Image(systemName: radio.muted ? "speaker.slash.fill" : "speaker.wave.2.fill").frame(width: 26, height: 26).contentShape(Rectangle()) }.buttonStyle(.plain).help(L10n.tr("Silenciar"))
             Slider(value: $radio.volume, in: 0...1).frame(width: 110).accessibilityLabel("Volume")
         }.foregroundStyle(design.ink).padding(.horizontal, 26).padding(.vertical, 13).background(Color(hex: design.panel).opacity(0.65))
     }
 }
 
 struct ReceiverConsole: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @EnvironmentObject private var app: AppController
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var radio: RadioPlayer
@@ -203,15 +206,15 @@ struct ReceiverConsole: View {
                         Spacer()
                         if app.vuStyle == .off { Equalizer(running: radio.state.isPlaying, color: design.highlight).frame(width: 45, height: 24) }
                     }.foregroundStyle(design.highlight)
-                    Text(radio.selected.name).font(.system(size: 21, weight: .semibold, design: design.mono ? .monospaced : skin == .heritage ? .serif : .default)).lineLimit(1)
-                    Text(radio.selected.genre).font(.system(size: 11)).foregroundStyle(design.secondary).lineLimit(1)
+                    Text(radio.selected.displayName).font(.system(size: 21, weight: .semibold, design: design.mono ? .monospaced : skin == .heritage ? .serif : .default)).lineLimit(1)
+                    Text(radio.selected.displayGenre).font(.system(size: 11)).foregroundStyle(design.secondary).lineLimit(1)
                     RadioDial(skin: skin, frequency: radio.selected.isLive ? FrequencyScale.fm(radio.selected.frequency) : nil, showsLabels: skin == .heritage).padding(.top, 4)
                 }.padding(23).background(Color(hex: design.panel), in: RoundedRectangle(cornerRadius: skin == .digital ? 3 : 12))
                     .overlay(RoundedRectangle(cornerRadius: skin == .digital ? 3 : 12).strokeBorder(design.highlight.opacity(0.22)).allowsHitTesting(false))
                 if skin == .heritage && app.vuStyle == .off { speaker.frame(width: 105) }
             }
             HStack(spacing: 22) {
-                Button { radio.muted.toggle() } label: { Label(radio.muted ? "MUDO" : "SOM", systemImage: radio.muted ? "speaker.slash" : "speaker.wave.2").font(.system(size: 9, weight: .bold)).frame(width: 64, height: 32).background(Color(hex: design.panel), in: RoundedRectangle(cornerRadius: 4)).contentShape(Rectangle()) }.buttonStyle(.plain)
+                Button { radio.muted.toggle() } label: { Label(radio.muted ? L10n.tr("MUDO") : L10n.tr("SOM"), systemImage: radio.muted ? "speaker.slash" : "speaker.wave.2").font(.system(size: 9, weight: .bold)).frame(width: 64, height: 32).background(Color(hex: design.panel), in: RoundedRectangle(cornerRadius: 4)).contentShape(Rectangle()) }.buttonStyle(.plain)
                 Spacer(minLength: 0)
                 TransportButtons(playSize: 48, spacing: skin == .digital ? 20 : 30)
                 Spacer(minLength: 0)

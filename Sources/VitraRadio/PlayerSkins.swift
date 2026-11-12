@@ -32,6 +32,7 @@ struct SkinDesign {
 }
 
 struct SkinSurface: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     let skin: PlayerSkin
     var appearance: MiniAppearance = .solid
@@ -57,6 +58,7 @@ struct SkinSurface: View {
 }
 
 struct RadioDial: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let skin: PlayerSkin
@@ -81,7 +83,7 @@ struct RadioDial: View {
                 }
                 if showsLabels {
                     ForEach([88, 92, 96, 100, 104, 108], id: \.self) { value in
-                        Text(String(value)).font(.system(size: 8, weight: .medium, design: .monospaced)).foregroundStyle(skin.design.secondary)
+                        Text(L10n.tr(String(value))).font(.system(size: 8, weight: .medium, design: .monospaced)).foregroundStyle(skin.design.secondary)
                             .position(x: 1 + width * FrequencyScale.position(Double(value)), y: 25)
                     }
                 }
@@ -107,6 +109,7 @@ struct RadioDial: View {
 }
 
 struct SkinDisplay: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     let skin: PlayerSkin
     let title: String
@@ -118,7 +121,7 @@ struct SkinDisplay: View {
     var body: some View {
         VStack(alignment: .leading, spacing: expanded ? 7 : 3) {
             Text(title).font(.system(size: expanded ? 16 : 11, weight: .semibold, design: design.mono ? .monospaced : skin == .heritage ? .serif : .default)).lineLimit(1)
-            Text(status).font(.system(size: expanded ? 9 : 8, weight: .medium, design: design.mono ? .monospaced : .default)).foregroundStyle(design.secondary).lineLimit(1)
+            Text(L10n.tr(status)).font(.system(size: expanded ? 9 : 8, weight: .medium, design: design.mono ? .monospaced : .default)).foregroundStyle(design.secondary).lineLimit(1)
             if expanded { RadioDial(skin: skin, frequency: frequency) }
         }.foregroundStyle(design.ink).frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, expanded ? 12 : 7).padding(.vertical, expanded ? 10 : 5)
@@ -129,6 +132,7 @@ struct SkinDisplay: View {
 }
 
 struct SkinnedMiniPlayer: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var radio: RadioPlayer
@@ -147,7 +151,7 @@ struct SkinnedMiniPlayer: View {
             }
             HStack(spacing: 6) {
                 if !expanded { DragHandle().frame(width: 16, height: 26) }
-                SkinDisplay(skin: skin, title: radio.selected.name, status: radio.state.isPlaying ? (radio.selected.isLive ? "AO VIVO · STEREO" : "REPRODUZINDO") : radio.state.label, expanded: expanded && app.miniSize.height >= 145, frequency: radio.selected.isLive ? FrequencyScale.fm(radio.selected.frequency) : nil, miniVU: true)
+                SkinDisplay(skin: skin, title: radio.selected.displayName, status: radio.state.isPlaying ? (radio.selected.isLive ? "AO VIVO · STEREO" : "REPRODUZINDO") : radio.state.label, expanded: expanded && app.miniSize.height >= 145, frequency: radio.selected.isLive ? FrequencyScale.fm(radio.selected.frequency) : nil, miniVU: true)
                     .layoutPriority(1)
                 if !expanded { controls; options }
                 else if app.miniSize.width >= 310 {
@@ -161,7 +165,7 @@ struct SkinnedMiniPlayer: View {
                     controls
                     Spacer(minLength: 5)
                     Button { app.showMain() } label: { Image(systemName: "arrow.up.left.and.arrow.down.right").font(.system(size: 10)).frame(width: 24, height: 24).contentShape(Rectangle()) }
-                        .buttonStyle(.plain).foregroundStyle(design.ink).help("Abrir Vitra Radio")
+                        .buttonStyle(.plain).foregroundStyle(design.ink).help(L10n.tr("Abrir Vitra Radio"))
                 }
             }
         }.padding(.horizontal, expanded ? 13 : 8).padding(.vertical, expanded ? 10 : 4)
@@ -178,21 +182,22 @@ struct SkinnedMiniPlayer: View {
             Button { radio.toggle() } label: {
                 Image(systemName: radio.active ? "pause.fill" : "play.fill").font(.system(size: 11, weight: .bold)).foregroundStyle(design.onAccent)
                     .frame(width: 29, height: 29).background(design.highlight, in: RoundedRectangle(cornerRadius: skin == .digital ? 4 : 15)).contentShape(Rectangle())
-            }.buttonStyle(.plain).help(radio.active ? "Pausar" : "Reproduzir")
+            }.buttonStyle(.plain).help(radio.active ? L10n.tr("Pausar") : L10n.tr("Reproduzir"))
             control("forward.end.fill", help: "Próxima rádio favorita") { radio.step(1) }
         }
     }
     private func control(_ symbol: String, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: symbol).font(.system(size: 10)).frame(width: 22, height: 29).contentShape(Rectangle()) }
-            .buttonStyle(.plain).foregroundStyle(design.ink).help(help)
+            .buttonStyle(.plain).foregroundStyle(design.ink).help(L10n.tr(help))
     }
     private var options: some View {
         Menu { MiniContextMenu() } label: { Image(systemName: "ellipsis").font(.system(size: 12, weight: .bold)).frame(width: 20, height: 24).contentShape(Rectangle()) }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().foregroundStyle(design.ink).help("Temas e opções")
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().foregroundStyle(design.ink).help(L10n.tr("Temas e opções"))
     }
 }
 
 struct SkinPreview: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     let skin: PlayerSkin
     private var design: SkinDesign { skin.design.overridingAccent(palette.accentOverride) }
@@ -220,6 +225,7 @@ struct SkinPreview: View {
 }
 
 struct PlayerThemesView: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var app: AppController
     var body: some View {
@@ -227,12 +233,12 @@ struct PlayerThemesView: View {
             VStack(alignment: .leading, spacing: 24) {
                 HStack {
                     VStack(alignment: .leading, spacing: 7) {
-                        Text("UM PLAYER. VÁRIAS PERSONALIDADES.").font(.system(size: 9, weight: .bold)).tracking(1.4).foregroundStyle(palette.muted)
-                        Text("Vista sua frequência.").font(.system(size: 29, weight: .semibold)).tracking(-1)
-                        Text("O app inteiro se transforma. Do rádio de mesa ao digital.").font(.system(size: 12)).foregroundStyle(palette.muted)
+                        Text(L10n.tr("UM PLAYER. VÁRIAS PERSONALIDADES.")).font(.system(size: 9, weight: .bold)).tracking(1.4).foregroundStyle(palette.muted)
+                        Text(L10n.tr("Vista sua frequência.")).font(.system(size: 29, weight: .semibold)).tracking(-1)
+                        Text(L10n.tr("O app inteiro se transforma. Do rádio de mesa ao digital.")).font(.system(size: 12)).foregroundStyle(palette.muted)
                     }
                     Spacer()
-                    Button { app.showMini() } label: { Label("Abrir miniplayer", systemImage: "pip") }.buttonStyle(VitraButtonStyle())
+                    Button { app.showMini() } label: { Label(L10n.tr("Abrir miniplayer"), systemImage: "pip") }.buttonStyle(VitraButtonStyle())
                 }
                 AccentPicker()
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 18) {
@@ -242,19 +248,19 @@ struct PlayerThemesView: View {
                                 if skin == .vitra { ClassicThemePreview() }
                                 else { SkinPreview(skin: skin) }
                                 HStack {
-                                    Text(skin.design.name).font(.system(size: 17, weight: .semibold))
+                                    Text(L10n.tr(skin.design.name)).font(.system(size: 17, weight: .semibold))
                                     Spacer()
-                                    if app.playerSkin == skin { Label("Em uso", systemImage: "checkmark.circle.fill").font(.system(size: 10, weight: .semibold)).foregroundStyle(palette.accent) }
-                                    else { Text(skin.design.category).font(.system(size: 8, weight: .bold)).tracking(1).foregroundStyle(palette.muted) }
+                                    if app.playerSkin == skin { Label(L10n.tr("Em uso"), systemImage: "checkmark.circle.fill").font(.system(size: 10, weight: .semibold)).foregroundStyle(palette.accent) }
+                                    else { Text(L10n.tr(skin.design.category)).font(.system(size: 8, weight: .bold)).tracking(1).foregroundStyle(palette.muted) }
                                 }
-                                Text(skin.design.subtitle).font(.system(size: 11)).foregroundStyle(palette.muted).frame(maxWidth: .infinity, alignment: .leading)
+                                Text(L10n.tr(skin.design.subtitle)).font(.system(size: 11)).foregroundStyle(palette.muted).frame(maxWidth: .infinity, alignment: .leading)
                             }.padding(14).background(palette.surface, in: RoundedRectangle(cornerRadius: 18))
                                 .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(app.playerSkin == skin ? palette.accent.opacity(0.65) : palette.line))
                                 .contentShape(RoundedRectangle(cornerRadius: 18))
                         }.buttonStyle(.plain)
                     }
                 }
-                Text("A skin muda a janela principal, a navegação, os displays e o miniplayer. Transparência e Liquid Glass continuam disponíveis no miniplayer. Sua escolha fica salva neste Mac.").font(.system(size: 11)).foregroundStyle(palette.muted).fixedSize(horizontal: false, vertical: true)
+                Text(L10n.tr("A skin muda a janela principal, a navegação, os displays e o miniplayer. Transparência e Liquid Glass continuam disponíveis no miniplayer. Sua escolha fica salva neste Mac.")).font(.system(size: 11)).foregroundStyle(palette.muted).fixedSize(horizontal: false, vertical: true)
             }.padding(.horizontal, 30).padding(.top, 47).padding(.bottom, 30)
         }.scrollIndicators(.hidden)
     }

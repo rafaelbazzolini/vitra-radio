@@ -72,6 +72,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     init(preferences: UserDefaults = .standard, preview: Bool = false) {
         self.preferences = preferences
         self.preview = preview
+        AppLocalization.shared.configure(preferences: preferences, preferred: preview ? (CommandLine.arguments.contains("--english-preview") ? ["en"] : ["pt-BR"]) : Locale.preferredLanguages)
         self.updateChecker = UpdateChecker(preferences: preferences)
         self.countries = CatalogCountries(preferences: preferences, preview: preview)
         self.scheduler = RadioAutomationStore(preferences: preferences)
@@ -89,6 +90,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         let defaultSize = isCompact ? CGSize(width: 280, height: 64) : CGSize(width: 326, height: 134)
         miniSize = MiniSizing.clamped(preferences.object(forKey: "miniWidth") == nil ? defaultSize : CGSize(width: preferences.double(forKey: "miniWidth"), height: preferences.double(forKey: "miniHeight")))
         super.init()
+        AppLocalization.shared.$language.dropFirst().sink { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self, self.statusItem != nil else { return }
+                self.makeMenu()
+                self.makeStatusItem()
+                self.objectWillChange.send()
+            }
+        }.store(in: &subscriptions)
         if preview && CommandLine.arguments.contains("--updates-preview") { updateChecker.previewAvailable() }
         if preview && CommandLine.arguments.contains("--vu-preview") { vuStyle = .digital }
         if preview && CommandLine.arguments.contains("--vu-modern-preview") { vuStyle = .modern }
@@ -158,11 +167,52 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         if preview {
             Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
-                if CommandLine.arguments.contains("--verify-titlebar") { self.verifyTitlebar() }
+                if CommandLine.arguments.contains("--verify-language") { self.verifyLanguage() }
+                else if CommandLine.arguments.contains("--verify-titlebar") { self.verifyTitlebar() }
                 else if CommandLine.arguments.contains("--verify-theme-menu") { self.verifyThemeMenu() }
                 else if CommandLine.arguments.contains("--verify-mini") { self.verifyMiniInteractions() }
                 else { self.exportPreviews() }
             }
+        }
+    }
+
+    private func verifyLanguage() {
+        Task { @MainActor in
+            @MainActor func themeButton(_ view: NSView?) -> NSButton? {
+                guard let view else { return nil }
+                if let button = view as? NSButton, ["Trocar tema", "Change theme"].contains(button.accessibilityLabel() ?? "") { return button }
+                return view.subviews.lazy.compactMap { themeButton($0) }.first
+            }
+            @MainActor func hasMenu(_ title: String) -> Bool {
+                @MainActor func contains(_ menu: NSMenu?) -> Bool {
+                    menu?.items.contains { $0.title == title || contains($0.submenu) } ?? false
+                }
+                return contains(NSApp.mainMenu)
+            }
+            let initialStation = radio.selected.id
+            let initialFavorites = radio.favorites
+            let folder = ProcessInfo.processInfo.environment["VITRA_PREVIEW_DIR"] ?? NSTemporaryDirectory() + "vitra-language-verification"
+            do {
+                try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+                showMini(hidingMain: false)
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                try snapshot(window: mainWindow, to: folder + "/portuguese.png")
+                let portuguese = hasMenu("Sair do Vitra Radio") && themeButton(mainWindow.contentView)?.accessibilityLabel() == "Trocar tema"
+                AppLocalization.shared.select(.english)
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                try snapshot(window: mainWindow, to: folder + "/english.png")
+                let english = hasMenu("Quit Vitra Radio") && themeButton(mainWindow.contentView)?.accessibilityLabel() == "Change theme"
+                let changed = try Data(contentsOf: URL(fileURLWithPath: folder + "/portuguese.png")) != Data(contentsOf: URL(fileURLWithPath: folder + "/english.png"))
+                AppLocalization.shared.select(.portuguese)
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                let restored = hasMenu("Sair do Vitra Radio") && themeButton(mainWindow.contentView)?.accessibilityLabel() == "Trocar tema"
+                let preserved = radio.selected.id == initialStation && radio.favorites == initialFavorites && radio.state == .idle && mini?.isVisible == true
+                for (passed, label) in [(portuguese, "Interface e menus iniciam em português"), (english, "Seletor nativo e menus mudam para inglês sem reiniciar"), (changed, "Janela SwiftUI renderiza a tradução ao vivo"), (restored, "Menus e controles retornam ao português"), (preserved, "Troca preserva estação, favoritas, áudio e miniplayer")] {
+                    print("\(passed ? "PASS" : "FAIL"): \(label)")
+                }
+                fflush(stdout)
+                exit(portuguese && english && changed && restored && preserved ? 0 : 1)
+            } catch { print("FAIL: \(error)"); fflush(stdout); exit(1) }
         }
     }
 
@@ -222,7 +272,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         mainWindow.isReleasedWhenClosed = false
         mainWindow.backgroundColor = NSColor(red: 0.06, green: 0.08, blue: 0.065, alpha: 1)
         mainWindow.contentMinSize = NSSize(width: 1000, height: 710)
-        mainWindow.contentView = ClickableHostingView(rootView: RadioView().environmentObject(countries).environmentObject(updateChecker).environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
+        mainWindow.contentView = ClickableHostingView(rootView: RadioView().defaultAppStorage(preferences).environment(\.locale, AppLocalization.shared.language.locale).environmentObject(countries).environmentObject(updateChecker).environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
         mainWindow.delegate = self
         mainWindow.standardWindowButton(.closeButton)?.target = self
         mainWindow.standardWindowButton(.closeButton)?.action = #selector(hideMainWindow)
@@ -254,7 +304,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
             panel.hasShadow = true
             panel.isMovableByWindowBackground = false
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
-            let hosting = ClickableHostingView(rootView: MiniPlayerView().environmentObject(radio).environmentObject(self))
+            let hosting = ClickableHostingView(rootView: MiniPlayerView().defaultAppStorage(preferences).environment(\.locale, AppLocalization.shared.language.locale).environmentObject(radio).environmentObject(self))
             hosting.sizingOptions = []
             panel.contentView = hosting
             panel.contentMinSize = MiniSizing.minimum
@@ -403,12 +453,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
 
     private func makeStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "Vitra Radio — abrir player")
+        let item = statusItem ?? NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        item.button?.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: L10n.tr("Vitra Radio — abrir player"))
         item.button?.title = ""
         item.length = NSStatusItem.squareLength
         item.button?.image?.isTemplate = true
-        item.button?.toolTip = "Vitra Radio · clique para abrir o player"
+        item.button?.toolTip = L10n.tr("Vitra Radio · clique para abrir o player")
         let menu = NSMenu()
         menu.addItem(menuItem("Abrir Vitra Radio", action: #selector(openMain)))
         menu.addItem(menuItem("Mostrar miniplayer", action: #selector(openMini)))
@@ -426,7 +476,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
 
     private func menuItem(_ title: String, action: Selector, key: String = "") -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
+        let item = NSMenuItem(title: L10n.tr(title), action: action, keyEquivalent: key)
         item.target = self
         return item
     }
@@ -437,7 +487,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         let applicationMenu = NSMenu()
         applicationMenu.addItem(menuItem("Sobre o Vitra Radio", action: #selector(about)))
         applicationMenu.addItem(.separator())
-        let hide = NSMenuItem(title: "Ocultar Vitra Radio", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        let hide = NSMenuItem(title: L10n.tr("Ocultar Vitra Radio"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         applicationMenu.addItem(hide)
         applicationMenu.addItem(.separator())
         applicationMenu.addItem(menuItem("Verificar atualizações…", action: #selector(checkUpdates)))
@@ -446,8 +496,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         mainMenu.addItem(applicationItem)
 
         let playbackItem = NSMenuItem()
-        playbackItem.title = "Reprodução"
-        let playback = NSMenu(title: "Reprodução")
+        playbackItem.title = L10n.tr("Reprodução")
+        let playback = NSMenu(title: L10n.tr("Reprodução"))
         playback.addItem(menuItem("Reproduzir / Pausar", action: #selector(togglePlayback), key: "p"))
         playback.addItem(menuItem("Próxima rádio", action: #selector(nextStation), key: String(UnicodeScalar(NSRightArrowFunctionKey)!)))
         playback.addItem(menuItem("Rádio anterior", action: #selector(previousStation), key: String(UnicodeScalar(NSLeftArrowFunctionKey)!)))
@@ -456,17 +506,17 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
 
         // Menu Editar mantém atalhos nativos de busca, copiar e colar.
         let editItem = NSMenuItem()
-        editItem.title = "Editar"
-        let edit = NSMenu(title: "Editar")
+        editItem.title = L10n.tr("Editar")
+        let edit = NSMenu(title: L10n.tr("Editar"))
         for (title, selector, key) in [("Recortar", #selector(NSText.cut(_:)), "x"), ("Copiar", #selector(NSText.copy(_:)), "c"), ("Colar", #selector(NSText.paste(_:)), "v"), ("Selecionar tudo", #selector(NSText.selectAll(_:)), "a")] {
-            edit.addItem(NSMenuItem(title: title, action: selector, keyEquivalent: key))
+            edit.addItem(NSMenuItem(title: L10n.tr(title), action: selector, keyEquivalent: key))
         }
         editItem.submenu = edit
         mainMenu.addItem(editItem)
 
         let windowItem = NSMenuItem()
-        windowItem.title = "Janela"
-        let windowMenu = NSMenu(title: "Janela")
+        windowItem.title = L10n.tr("Janela")
+        let windowMenu = NSMenu(title: L10n.tr("Janela"))
         windowMenu.addItem(menuItem("Janela completa", action: #selector(openMain), key: "1"))
         let miniItem = menuItem("Miniplayer", action: #selector(openMini), key: "m")
         miniItem.keyEquivalentModifierMask = [.command, .shift]
@@ -501,8 +551,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     }
     @objc private func about() {
         NSApp.orderFrontStandardAboutPanel(options: [
-            .applicationName: "Vitra Radio", .applicationVersion: "1.2.0",
-            .credits: NSAttributedString(string: "Sua frequência. Seu espaço.\nBiblioteca privada no seu dispositivo.\n\nArraste o miniplayer pela alça pontilhada.\nClique com o botão direito para tamanho e posição."),
+            .applicationName: "Vitra Radio", .applicationVersion: updateChecker.currentVersion,
+            .credits: NSAttributedString(string: L10n.tr("Sua frequência. Seu espaço.\nBiblioteca privada no seu dispositivo.\n\nArraste o miniplayer pela alça pontilhada.\nClique com o botão direito para tamanho e posição.")),
             .version: "1"
         ])
     }

@@ -9,7 +9,7 @@ enum MusicServerKind: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .subsonic: return "Navidrome / Subsonic"
         case .jellyfin: return "Jellyfin"
-        case .folder: return "Pasta / NAS (SMB)"
+        case .folder: return L10n.tr("Pasta / NAS (SMB)")
         }
     }
 }
@@ -17,12 +17,12 @@ enum MusicServerKind: String, Codable, CaseIterable, Identifiable {
 enum MusicNetwork: String, Codable, CaseIterable, Identifiable {
     case tailscale, local, internet
     var id: String { rawValue }
-    var title: String { switch self { case .tailscale: return "Tailscale"; case .local: return "Rede local"; case .internet: return "Internet" } }
+    var title: String { switch self { case .tailscale: return "Tailscale"; case .local: return L10n.tr("Rede local"); case .internet: return "Internet" } }
     var help: String {
         switch self {
-        case .tailscale: return "Conecte o Tailscale no Mac e no servidor. Use o IP 100.x.x.x ou o nome MagicDNS, incluindo a porta do serviço."
-        case .local: return "Use o endereço do servidor na sua rede Wi-Fi ou Ethernet, incluindo a porta do serviço."
-        case .internet: return "Use o endereço HTTPS público do seu servidor."
+        case .tailscale: return L10n.tr("Conecte o Tailscale no Mac e no servidor. Use o IP 100.x.x.x ou o nome MagicDNS, incluindo a porta do serviço.")
+        case .local: return L10n.tr("Use o endereço do servidor na sua rede Wi-Fi ou Ethernet, incluindo a porta do serviço.")
+        case .internet: return L10n.tr("Use o endereço HTTPS público do seu servidor.")
         }
     }
 }
@@ -38,20 +38,20 @@ struct MusicServerProfile: Identifiable, Codable, Equatable {
 
     func baseURL() throws -> URL {
         var value = address.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !value.isEmpty else { throw MusicServerError.message("Informe o endereço do servidor.") }
+        guard !value.isEmpty else { throw MusicServerError.message(L10n.tr("Informe o endereço do servidor.")) }
         if !value.contains("://") { value = (network == .internet ? "https://" : "http://") + value }
         guard var parts = URLComponents(string: value), let host = parts.host, !host.isEmpty,
               ["http", "https"].contains(parts.scheme?.lowercased() ?? ""),
               parts.user == nil, parts.password == nil, parts.query == nil, parts.fragment == nil else {
-            throw MusicServerError.message("Use o endereço do servidor com http:// ou https://, sem usuário, senha ou parâmetros na URL.")
+            throw MusicServerError.message(L10n.tr("Use o endereço do servidor com http:// ou https://, sem usuário, senha ou parâmetros na URL."))
         }
         if network == .internet && parts.scheme?.lowercased() != "https" {
-            throw MusicServerError.message("Para conectar pela internet, use o endereço HTTPS do servidor.")
+            throw MusicServerError.message(L10n.tr("Para conectar pela internet, use o endereço HTTPS do servidor."))
         }
         parts.path = parts.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         if !parts.path.isEmpty { parts.path = "/" + parts.path }
         if kind == .subsonic && parts.path.hasSuffix("/rest") { parts.path = String(parts.path.dropLast(5)) }
-        guard let url = parts.url else { throw MusicServerError.message("Endereço inválido.") }
+        guard let url = parts.url else { throw MusicServerError.message(L10n.tr("Endereço inválido.")) }
         return url
     }
 }
@@ -87,12 +87,12 @@ enum MusicServerError: LocalizedError {
         let code = (error as NSError).code
         switch code {
         case NSURLErrorCannotFindHost, NSURLErrorDNSLookupFailed:
-            return "Servidor não encontrado. Confira o endereço e, se usar Tailscale, se ele está conectado e o MagicDNS está ativo."
+            return L10n.tr("Servidor não encontrado. Confira o endereço e, se usar Tailscale, se ele está conectado e o MagicDNS está ativo.")
         case NSURLErrorTimedOut, NSURLErrorCannotConnectToHost, NSURLErrorNetworkConnectionLost, NSURLErrorNotConnectedToInternet:
-            return "Não foi possível alcançar o servidor. Confira a rede ou o Tailscale, a porta e as permissões de acesso do servidor."
+            return L10n.tr("Não foi possível alcançar o servidor. Confira a rede ou o Tailscale, a porta e as permissões de acesso do servidor.")
         case NSURLErrorServerCertificateUntrusted, NSURLErrorSecureConnectionFailed:
-            return "O certificado HTTPS não foi aceito. Use um certificado válido ou, na sua rede local/VPN, o endereço HTTP do serviço."
-        default: return "Não foi possível concluir a conexão. Confira o endereço, o tipo de servidor e suas credenciais."
+            return L10n.tr("O certificado HTTPS não foi aceito. Use um certificado válido ou, na sua rede local/VPN, o endereço HTTP do serviço.")
+        default: return L10n.tr("Não foi possível concluir a conexão. Confira o endereço, o tipo de servidor e suas credenciais.")
         }
     }
 }
@@ -115,7 +115,7 @@ struct KeychainMusicVault: MusicCredentialVault {
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         if status == errSecItemNotFound { return nil }
-        guard status == errSecSuccess, let data = result as? Data else { throw MusicServerError.message("Não foi possível ler as credenciais no Chaves do macOS.") }
+        guard status == errSecSuccess, let data = result as? Data else { throw MusicServerError.message(L10n.tr("Não foi possível ler as credenciais no Chaves do macOS.")) }
         return try JSONDecoder().decode(MusicCredential.self, from: data)
     }
     func save(_ credential: MusicCredential, id: UUID) throws {
@@ -126,12 +126,12 @@ struct KeychainMusicVault: MusicCredentialVault {
             var item = query
             item[kSecValueData as String] = data
             item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-            guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { throw MusicServerError.message("Não foi possível guardar as credenciais no Chaves do macOS.") }
-        } else if status != errSecSuccess { throw MusicServerError.message("Não foi possível atualizar as credenciais no Chaves do macOS.") }
+            guard SecItemAdd(item as CFDictionary, nil) == errSecSuccess else { throw MusicServerError.message(L10n.tr("Não foi possível guardar as credenciais no Chaves do macOS.")) }
+        } else if status != errSecSuccess { throw MusicServerError.message(L10n.tr("Não foi possível atualizar as credenciais no Chaves do macOS.")) }
     }
     func delete(_ id: UUID) throws {
         let status = SecItemDelete(query(id) as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else { throw MusicServerError.message("Não foi possível remover as credenciais do Chaves do macOS.") }
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw MusicServerError.message(L10n.tr("Não foi possível remover as credenciais do Chaves do macOS.")) }
     }
 }
 

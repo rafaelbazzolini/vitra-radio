@@ -17,6 +17,7 @@ struct VitraButtonStyle: ButtonStyle {
 }
 
 struct ClassicThemePreview: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     private var previewAccent: Color { Color(hex: palette.accentOverride ?? PlayerSkin.vitra.design.accent) }
     private var previewInk: Color { AccentColors.ink(on: palette.accentOverride ?? PlayerSkin.vitra.design.accent) }
@@ -26,16 +27,16 @@ struct ClassicThemePreview: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 4) { Image(systemName: "waveform").foregroundStyle(previewAccent); Text("vitra").fontWeight(.bold) }.font(.system(size: 10))
                     ForEach(["Início", "Todas as rádios", "Favoritas", "Meu servidor", "Temas"], id: \.self) { text in
-                        Text(text).font(.system(size: 6, weight: .semibold)).foregroundStyle(text == "Início" ? previewAccent : Color(hex: 0x8D9A90)).lineLimit(1)
+                        Text(L10n.tr(text)).font(.system(size: 6, weight: .semibold)).foregroundStyle(text == "Início" ? previewAccent : Color(hex: 0x8D9A90)).lineLimit(1)
                     }
                     Spacer(minLength: 0)
                 }.padding(10).frame(width: geometry.size.width * 0.24).background(Color(hex: 0x151A17))
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("O seu dia tem trilha.").font(.system(size: 12, weight: .semibold)).foregroundStyle(Color(hex: 0xF1F4EC))
+                    Text(L10n.tr("O seu dia tem trilha.")).font(.system(size: 12, weight: .semibold)).foregroundStyle(Color(hex: 0xF1F4EC))
                     HStack(spacing: 3) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Uma boa trilha\nmuda tudo.").font(.system(size: 10, weight: .medium))
-                            Text("Ouvir agora").font(.system(size: 5, weight: .bold)).padding(5).foregroundStyle(previewInk).background(previewAccent, in: Capsule())
+                            Text(L10n.tr("Uma boa trilha\nmuda tudo.")).font(.system(size: 10, weight: .medium))
+                            Text(L10n.tr("Ouvir agora")).font(.system(size: 5, weight: .bold)).padding(5).foregroundStyle(previewInk).background(previewAccent, in: Capsule())
                         }.foregroundStyle(Color(hex: 0xF1F4EC))
                         Spacer(minLength: 0)
                         StationArtwork(station: Station.demo[0], hero: true).frame(width: 65, height: 58).clipped()

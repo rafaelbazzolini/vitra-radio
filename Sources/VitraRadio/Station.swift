@@ -12,6 +12,14 @@ struct Station: Identifiable, Equatable {
     let colors: [Color]
     let symbol: String
     var isLive = true
+    var displayName: String { id == "welcome" ? L10n.tr(name) : name }
+    var displayGenre: String { id == "welcome" || (id.hasPrefix("rb-") && genre == "Rádio ao vivo") ? L10n.tr(genre) : genre }
+    var displayDescription: String {
+        if id.hasPrefix("rb-"), tagline == "Sintonize uma nova companhia.", frequency != "WEB RADIO" {
+            return L10n.tr("Ao vivo de \(frequency). Uma nova frequência para acompanhar o seu dia.")
+        }
+        return L10n.tr(description)
+    }
 
     struct Saved: Codable, Equatable {
         let id: String
@@ -63,15 +71,15 @@ extension Color {
 }
 
 enum PlaybackState: Equatable {
-    case idle, connecting, playing, paused, failed(String)
+    case idle, connecting, playing, paused, failed(L10n.Message)
 
     var label: String {
         switch self {
-        case .idle: return "Pronto para ouvir"
-        case .connecting: return "Conectando…"
-        case .playing: return "Ao vivo"
-        case .paused: return "Pausado"
-        case .failed(let message): return message
+        case .idle: return L10n.tr("Pronto para ouvir")
+        case .connecting: return L10n.tr("Conectando…")
+        case .playing: return L10n.tr("Ao vivo")
+        case .paused: return L10n.tr("Pausado")
+        case .failed(let message): return L10n.tr(message)
         }
     }
     var isBusy: Bool { self == .connecting }

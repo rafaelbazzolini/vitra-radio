@@ -65,7 +65,7 @@ struct VitraRadioMain {
             application.run()
             return
         }
-        let preview = CommandLine.arguments.contains("--render-previews") || CommandLine.arguments.contains("--verify-mini") || CommandLine.arguments.contains("--verify-theme-menu") || CommandLine.arguments.contains("--verify-titlebar")
+        let preview = CommandLine.arguments.contains("--verify-language") || CommandLine.arguments.contains("--render-previews") || CommandLine.arguments.contains("--verify-mini") || CommandLine.arguments.contains("--verify-theme-menu") || CommandLine.arguments.contains("--verify-titlebar")
         let preferences = preview ? UserDefaults(suiteName: "com.vitra.radio.preview")! : .standard
         if preview { preferences.removePersistentDomain(forName: "com.vitra.radio.preview") }
         let application = NSApplication.shared

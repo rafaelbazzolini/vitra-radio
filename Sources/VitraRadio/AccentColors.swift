@@ -41,17 +41,18 @@ enum AccentColors {
 }
 
 struct AccentPicker: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @EnvironmentObject private var app: AppController
     @Environment(\.appPalette) private var palette
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Cor de destaque").font(.system(size: 16, weight: .semibold))
-                    Text("A cor é independente da skin e acompanha todo o app.").font(.system(size: 11)).foregroundStyle(palette.muted)
+                    Text(L10n.tr("Cor de destaque")).font(.system(size: 16, weight: .semibold))
+                    Text(L10n.tr("A cor é independente da skin e acompanha todo o app.")).font(.system(size: 11)).foregroundStyle(palette.muted)
                 }
                 Spacer()
-                Button("Padrão da skin") { app.accentColorHex = nil }.font(.system(size: 11)).disabled(app.accentColorHex == nil)
+                Button(L10n.tr("Padrão da skin")) { app.accentColorHex = nil }.font(.system(size: 11)).disabled(app.accentColorHex == nil)
             }
             HStack(spacing: 14) {
                 ForEach(AccentColors.presets, id: \.0) { name, hex in
@@ -60,7 +61,7 @@ struct AccentPicker: View {
                             .overlay { if app.accentColorHex == hex { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(AccentColors.ink(on: hex)) } }
                             .padding(3).overlay(Circle().strokeBorder(app.accentColorHex == hex ? palette.text.opacity(0.6) : .clear))
                             .contentShape(Circle())
-                    }.buttonStyle(.plain).help(name).accessibilityLabel(name)
+                    }.buttonStyle(.plain).help(L10n.tr(name)).accessibilityLabel(L10n.tr(name))
                 }
                 Spacer()
                 ColorPicker("Personalizar", selection: Binding(get: { Color(hex: app.accentColorHex ?? app.playerSkin.design.accent) }, set: { if let hex = AccentColors.hex($0) { app.accentColorHex = hex } }), supportsOpacity: false).font(.system(size: 11)).fixedSize()

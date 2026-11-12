@@ -164,7 +164,7 @@ final class MusicServerStore: ObservableObject {
             let access = url.startAccessingSecurityScopedResource()
             defer { if access { url.stopAccessingSecurityScopedResource() } }
             guard (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true,
-                  FileManager.default.isReadableFile(atPath: url.path) else { throw MusicServerError.message("A pasta não está disponível. Monte o compartilhamento no Finder e escolha a pasta novamente.") }
+                  FileManager.default.isReadableFile(atPath: url.path) else { throw MusicServerError.message(L10n.tr("A pasta não está disponível. Monte o compartilhamento no Finder e escolha a pasta novamente.")) }
             return MusicCredential()
         }
         _ = try profile.baseURL()
@@ -177,7 +177,7 @@ final class MusicServerStore: ObservableObject {
     private func persist() { if let data = try? JSONEncoder().encode(profiles) { preferences.set(data, forKey: "musicServers") } }
 
     private func resolveFolder(_ profile: MusicServerProfile) throws -> URL {
-        guard let bookmark = profile.folderBookmark else { throw MusicServerError.message("Escolha uma pasta de música no Mac ou em um compartilhamento montado no Finder.") }
+        guard let bookmark = profile.folderBookmark else { throw MusicServerError.message(L10n.tr("Escolha uma pasta de música no Mac ou em um compartilhamento montado no Finder.")) }
         var stale = false
         let url = try URL(resolvingBookmarkData: bookmark, options: [.withSecurityScope], relativeTo: nil, bookmarkDataIsStale: &stale)
         if stale { throw MusicServerError.message("O acesso salvo à pasta expirou. Edite o servidor e selecione a pasta novamente.") }
@@ -193,7 +193,7 @@ final class MusicServerStore: ObservableObject {
     nonisolated private static func scanFiles(_ url: URL) throws -> [MusicTrack] {
             let extensions: Set<String> = ["mp3", "m4a", "aac", "flac", "wav", "aiff", "aif", "mp4"]
             guard let files = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles, .skipsPackageDescendants]) else {
-                throw MusicServerError.message("Não foi possível ler essa pasta.")
+                throw MusicServerError.message(L10n.tr("Não foi possível ler essa pasta."))
             }
             var tracks: [MusicTrack] = []
             for case let file as URL in files {

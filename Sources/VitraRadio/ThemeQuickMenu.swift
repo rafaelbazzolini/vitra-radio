@@ -2,23 +2,25 @@ import SwiftUI
 import AppKit
 
 struct ThemeQuickMenu: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var app: AppController
     var body: some View {
         HStack(spacing: 7) {
             Image(systemName: "paintpalette").foregroundStyle(palette.accent)
-            Text("Tema").fontWeight(.semibold)
+            Text(L10n.tr("Tema")).fontWeight(.semibold)
             Image(systemName: "chevron.down").font(.system(size: 8, weight: .semibold)).foregroundStyle(palette.muted)
         }.font(.system(size: 11)).foregroundStyle(palette.text).padding(.horizontal, 12).padding(.vertical, 11)
             .background(palette.surface, in: Capsule())
             .overlay(Capsule().strokeBorder(palette.line).allowsHitTesting(false))
             .overlay(NativeThemeMenu(selected: app.playerSkin, palette: palette) { app.playerSkin = $0 }.frame(maxWidth: .infinity, maxHeight: .infinity))
-            .fixedSize().help("Trocar tema · \(app.playerSkin.design.name)")
+            .fixedSize().help(L10n.tr("Trocar tema · \(app.playerSkin.design.name)"))
     }
 }
 
 // An AppKit control owns both the click and popup lifetime, including inside a SwiftUI ScrollView.
 private struct NativeThemeMenu: NSViewRepresentable {
+    @ObservedObject private var localization = AppLocalization.shared
     let selected: PlayerSkin
     let palette: AppPalette
     let choose: (PlayerSkin) -> Void
@@ -27,11 +29,12 @@ private struct NativeThemeMenu: NSViewRepresentable {
         let button = NSButton(title: "", target: context.coordinator, action: #selector(Coordinator.open(_:)))
         button.isBordered = false
         button.bezelStyle = .inline
-        button.setAccessibilityLabel("Trocar tema")
+        button.setAccessibilityLabel(L10n.tr("Trocar tema"))
         return button
     }
     func updateNSView(_ button: NSButton, context: Context) {
         context.coordinator.parent = self
+        button.setAccessibilityLabel(L10n.tr("Trocar tema"))
         button.setAccessibilityValue(selected.design.name)
     }
     final class Coordinator: NSObject, NSPopoverDelegate, ThemePickerControlling {
@@ -59,17 +62,18 @@ private struct NativeThemeMenu: NSViewRepresentable {
 protocol ThemePickerControlling: AnyObject { func chooseTheme(_ theme: PlayerSkin) }
 
 private struct ThemePickerList: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     let selected: PlayerSkin
     let choose: (PlayerSkin) -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("Escolher tema").font(.system(size: 12, weight: .semibold)).padding(.horizontal, 10).padding(.vertical, 7)
+            Text(L10n.tr("Escolher tema")).font(.system(size: 12, weight: .semibold)).padding(.horizontal, 10).padding(.vertical, 7)
             ForEach(PlayerSkin.allCases) { theme in
                 Button { choose(theme) } label: {
                     HStack(spacing: 10) {
                         Circle().fill(theme.design.highlight).frame(width: 10, height: 10)
-                        Text(theme.design.name).font(.system(size: 12, weight: .medium))
+                        Text(L10n.tr(theme.design.name)).font(.system(size: 12, weight: .medium))
                         Spacer()
                         if selected == theme { Image(systemName: "checkmark").foregroundStyle(palette.accent) }
                     }.padding(10).frame(maxWidth: .infinity)
@@ -86,13 +90,14 @@ enum HomeRadioSection: String, CaseIterable {
 }
 
 struct HomeRadioTabs: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @Binding var selection: HomeRadioSection
     var body: some View {
         HStack(spacing: 6) {
             ForEach(HomeRadioSection.allCases, id: \.self) { section in
                 Button { selection = section } label: {
-                    Label(section.rawValue, systemImage: section == .favorites ? "heart.fill" : "clock.arrow.circlepath")
+                    Label(L10n.tr(section.rawValue), systemImage: section == .favorites ? "heart.fill" : "clock.arrow.circlepath")
                         .font(.system(size: 12, weight: .semibold)).padding(.horizontal, 14).padding(.vertical, 10)
                         .foregroundStyle(selection == section ? palette.accent : palette.muted)
                         .background(selection == section ? palette.accent.opacity(0.12) : palette.surface, in: Capsule())

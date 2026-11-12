@@ -1,16 +1,17 @@
 import SwiftUI
 
 struct RadioSettingsView: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
-    @AppStorage("settingsTab") private var tab = "Servidor"
+    @AppStorage("settingsTab") private var tab = "Rádios"
     private let tabs = ["Rádios", "Servidor", "Temas", "Automação", "Miniplayer", "Atualizações"]
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Ajustes").font(.system(size: 27, weight: .semibold)).padding(.bottom, 18)
+            Text(L10n.tr("Ajustes")).font(.system(size: 27, weight: .semibold)).padding(.bottom, 18)
             HStack(spacing: 8) {
                 ForEach(tabs, id: \.self) { item in
                     Button { tab = item } label: {
-                        Text(item).font(.system(size: 12, weight: .semibold))
+                        Text(item == "Rádios" ? L10n.tr("Idioma e região") : L10n.tr(item)).font(.system(size: 12, weight: .semibold))
                             .padding(.horizontal, 18).padding(.vertical, 11)
                             .foregroundStyle(tab == item ? palette.onAccent : palette.muted)
                             .background(tab == item ? palette.accent : palette.surface, in: Capsule())
@@ -34,6 +35,7 @@ struct RadioSettingsView: View {
 }
 
 struct MiniSettingsView: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var radio: RadioPlayer
     @Environment(\.appPalette) private var palette
@@ -41,31 +43,31 @@ struct MiniSettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 Text("Miniplayer").font(.system(size: 24, weight: .semibold))
-                Text("Acompanhe sua música ao lado da Dock. Arraste o canto superior para redimensionar livremente.")
+                Text(L10n.tr("Acompanhe sua música ao lado da Dock. Arraste o canto superior para redimensionar livremente."))
                     .font(.system(size: 12)).foregroundStyle(palette.muted)
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Aparência").font(.headline)
+                    Text(L10n.tr("Aparência")).font(.headline)
                     SettingsOptions(selection: $app.miniAppearance, options: MiniAppearance.allCases.map { ($0.title, $0) })
-                    Toggle("Manter sobre outras janelas", isOn: $radio.alwaysOnTop)
+                    Toggle(L10n.tr("Manter sobre outras janelas"), isOn: $radio.alwaysOnTop)
                     HStack {
-                        Text("Largura")
+                        Text(L10n.tr("Largura"))
                         Slider(value: Binding(get: { Double(app.miniSize.width) }, set: { app.setMiniSize(CGSize(width: $0, height: app.miniSize.height)) }), in: 230...620)
                         Text("\(Int(app.miniSize.width)) px").monospacedDigit().frame(width: 55)
                     }
                     HStack {
-                        Text("Altura")
+                        Text(L10n.tr("Altura"))
                         Slider(value: Binding(get: { Double(app.miniSize.height) }, set: { app.setMiniSize(CGSize(width: app.miniSize.width, height: $0)) }), in: 44...200)
                         Text("\(Int(app.miniSize.height)) px").monospacedDigit().frame(width: 55)
                     }
                     Divider()
-                    Text("VU no fundo do display").font(.headline)
+                    Text(L10n.tr("VU no fundo do display")).font(.headline)
                     SettingsOptions(selection: $app.miniVUStyle, options: [("Desligado", .off), ("Digital", .digital), ("Analógico", .analog)])
-                    Text("Reage ao áudio em tempo real, por trás do nome e do status da rádio. Independente do VU da janela principal.")
+                    Text(L10n.tr("Reage ao áudio em tempo real, por trás do nome e do status da rádio. Independente do VU da janela principal."))
                         .font(.system(size: 12)).foregroundStyle(palette.muted)
                 }.padding(22).background(palette.surface, in: RoundedRectangle(cornerRadius: 16))
                 HStack {
-                    Button("Ajustar à altura da Dock") { app.fitMiniToDock() }.buttonStyle(VitraButtonStyle())
-                    Button("Abrir miniplayer") { app.showMini() }.buttonStyle(VitraButtonStyle())
+                    Button(L10n.tr("Ajustar à altura da Dock")) { app.fitMiniToDock() }.buttonStyle(VitraButtonStyle())
+                    Button(L10n.tr("Abrir miniplayer")) { app.showMini() }.buttonStyle(VitraButtonStyle())
                 }
             }.padding(24).frame(maxWidth: 760, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -74,6 +76,7 @@ struct MiniSettingsView: View {
 
 /// Decorative, non-interactive audio meters behind the station lettering.
 struct MiniVUBackground: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var radio: RadioPlayer
     @Environment(\.appPalette) private var palette
@@ -87,6 +90,7 @@ struct MiniVUBackground: View {
 }
 
 struct LiveMiniVU: View {
+    @ObservedObject private var localization = AppLocalization.shared
     let meter: AudioMeterLevels
     let style: VUStyle
     let enabled: Bool
@@ -105,6 +109,7 @@ struct LiveMiniVU: View {
 }
 
 struct MiniVUCanvas: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     let style: VUStyle
     let enabled: Bool
@@ -152,6 +157,7 @@ struct MiniVUCanvas: View {
 }
 
 private struct SettingsOptions<Value: Hashable>: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @Binding var selection: Value
     let options: [(String, Value)]
@@ -161,7 +167,7 @@ private struct SettingsOptions<Value: Hashable>: View {
                 Button { selection = value } label: {
                     HStack(spacing: 7) {
                         if selection == value { Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)) }
-                        Text(title).font(.system(size: 12, weight: .semibold))
+                        Text(L10n.tr(title)).font(.system(size: 12, weight: .semibold))
                     }.frame(maxWidth: .infinity).padding(.vertical, 13)
                         .foregroundStyle(selection == value ? palette.accent : palette.muted)
                         .background(selection == value ? palette.accent.opacity(0.12) : palette.background.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))

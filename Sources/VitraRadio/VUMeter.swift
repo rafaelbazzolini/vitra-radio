@@ -53,24 +53,26 @@ enum VUStyle: String, CaseIterable {
 }
 
 struct VUStyleMenu: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @EnvironmentObject private var app: AppController
     @Environment(\.appPalette) private var palette
     var body: some View {
         Menu {
             ForEach(VUStyle.allCases, id: \.self) { style in
                 Button { app.vuStyle = style } label: {
-                    if app.vuStyle == style { Label(style.rawValue, systemImage: "checkmark") }
-                    else { Text(style.rawValue) }
+                    if app.vuStyle == style { Label(L10n.tr(style.rawValue), systemImage: "checkmark") }
+                    else { Text(L10n.tr(style.rawValue)) }
                 }
             }
         } label: {
             Label(app.vuStyle == .off ? "VU" : app.vuStyle.rawValue, systemImage: "chart.bar.xaxis")
                 .font(.system(size: 11, weight: .semibold)).foregroundStyle(palette.accent)
-        }.menuStyle(.borderlessButton).fixedSize().help("Medidores de áudio em tempo real")
+        }.menuStyle(.borderlessButton).fixedSize().help(L10n.tr("Medidores de áudio em tempo real"))
     }
 }
 
 struct LiveVUMeter: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @EnvironmentObject private var radio: RadioPlayer
     @Environment(\.appPalette) private var palette
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -101,7 +103,7 @@ struct LiveVUMeter: View {
                             }
                         }
                     }.frame(height: 196)
-                    .help("Oito bandas reais: 63, 125, 250, 500 Hz, 1, 2, 4 e 8 kHz")
+                    .help(L10n.tr("Oito bandas reais: 63, 125, 250, 500 Hz, 1, 2, 4 e 8 kHz"))
                 } else if style == .modern {
                     ZStack(alignment: .bottom) {
                         Capsule().fill(palette.text.opacity(0.06))
@@ -120,7 +122,7 @@ struct LiveVUMeter: View {
             }.foregroundStyle(palette.muted).padding(.vertical, 16).frame(width: width)
                 .background(palette.background.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(palette.line).allowsHitTesting(false))
-                .accessibilityLabel("Nível do canal \(right ? "direito" : "esquerdo"): \(Int(db)) decibéis")
+                .accessibilityLabel(L10n.tr("Nível do canal \(right ? "direito" : "esquerdo"): \(Int(db)) decibéis"))
         }
     }
     private func analog(value: Double) -> some View {

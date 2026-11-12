@@ -4,7 +4,7 @@ A distribuição pública inicia sem rádios, favoritas, histórico, automaçõe
 
 ## Dados locais
 
-- macOS nativo: preferências e biblioteca em UserDefaults; credenciais de servidores no Keychain.
+- macOS nativo: preferências (inclusive idioma e países) e biblioteca em UserDefaults; credenciais de servidores no Keychain. A sugestão de idioma usa a preferência local do sistema, sem serviço externo.
 - Edição Flutter: biblioteca, favoritos, recentes, horários e preferências em SharedPreferences. Não é armazenamento criptografado; não coloque segredos em URLs de streams.
 - O app não envia a biblioteca a um backend próprio. Não há conta Vitra, analytics ou publicidade próprios.
 

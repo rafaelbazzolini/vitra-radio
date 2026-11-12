@@ -18,7 +18,7 @@ struct AppRelease: Decodable {
               asset.browser_download_url.scheme == "https", asset.browser_download_url.host == "github.com",
               asset.browser_download_url.user == nil, asset.browser_download_url.password == nil,
               asset.browser_download_url.path == "/\(UpdateChecker.repository)/releases/download/\(tag_name)/\(name)" else {
-            throw AppUpdateError(message: "O pacote macOS desta versão ainda não está disponível para atualização dentro do app.")
+            throw AppUpdateError(message: L10n.tr("O pacote macOS desta versão ainda não está disponível para atualização dentro do app."))
         }
         return asset
     }
@@ -50,7 +50,7 @@ struct AppRelease: Decodable {
 
     init(preferences: UserDefaults) {
         if let previousError = preferences.string(forKey: "updateInstallError") {
-            error = "A atualização não foi concluída: " + previousError
+            error = L10n.tr("A atualização não foi concluída: ") + previousError
             preferences.removeObject(forKey: "updateInstallError")
         }
     }
@@ -79,7 +79,7 @@ struct AppRelease: Decodable {
                 request.timeoutInterval = 20
                 let (data, response) = try await URLSession.shared.data(for: request)
                 guard let http = response as? HTTPURLResponse, http.statusCode == 200, data.count < 2_000_000 else {
-                    throw AppUpdateError(message: "Não foi possível consultar as atualizações. Tente novamente em instantes.")
+                    throw AppUpdateError(message: L10n.tr("Não foi possível consultar as atualizações. Tente novamente em instantes."))
                 }
                 let release = try AppRelease.newer(from: data, current: currentVersion)
                 lastCheck = Date()
@@ -133,7 +133,7 @@ struct AppRelease: Decodable {
               let url = response.url, url.scheme == "https", let host = url.host,
               host == "github.com" || host.hasSuffix(".githubusercontent.com"),
               try temporary.resourceValues(forKeys: [.fileSizeKey]).fileSize == asset.size else {
-            throw AppUpdateError(message: "O download não terminou corretamente. Tente novamente.")
+            throw AppUpdateError(message: L10n.tr("O download não terminou corretamente. Tente novamente."))
         }
         let destination = folder.appendingPathComponent(asset.name)
         try FileManager.default.moveItem(at: temporary, to: destination)

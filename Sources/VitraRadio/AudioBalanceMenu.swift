@@ -1,20 +1,21 @@
 import SwiftUI
 
 struct AudioBalanceMenu: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var radio: RadioPlayer
     var body: some View {
         Menu {
-            Toggle("Equilibrar volume entre rádios", isOn: $radio.volumeBalancingEnabled)
+            Toggle(L10n.tr("Equilibrar volume entre rádios"), isOn: $radio.volumeBalancingEnabled)
             Divider()
-            Text(radio.volumeBalanceStatus)
-            Text("Ajuste gradual de nível e proteção contra picos.")
-            Text("Seu volume e o volume do Mac são preservados.")
+            Text(L10n.tr(radio.volumeBalanceStatus))
+            Text(L10n.tr("Ajuste gradual de nível e proteção contra picos."))
+            Text(L10n.tr("Seu volume e o volume do Mac são preservados."))
         } label: {
             Image(systemName: "slider.horizontal.3").font(.system(size: 13))
                 .foregroundStyle(radio.volumeBalancingEnabled ? palette.accent : palette.muted)
                 .frame(width: 26, height: 28).contentShape(Rectangle())
         }.menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-            .help("Equilíbrio automático de volume")
+            .help(L10n.tr("Equilíbrio automático de volume"))
     }
 }

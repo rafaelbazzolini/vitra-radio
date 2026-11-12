@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TimeNumberField: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @Binding var value: Int
     @Binding var valid: Bool
@@ -17,7 +18,7 @@ struct TimeNumberField: View {
             stepButton("minus", delta: -1)
             TextField("00", text: $text).textFieldStyle(.plain).multilineTextAlignment(.center)
                 .font(.system(size: 20, weight: .medium, design: .monospaced)).frame(width: 31).focused($focused)
-                .accessibilityLabel(title)
+                .accessibilityLabel(L10n.tr(title))
             stepButton("plus", delta: 1)
         }.padding(.horizontal, 4).padding(.vertical, 9)
             .background(palette.surface, in: RoundedRectangle(cornerRadius: 10))
@@ -37,6 +38,6 @@ struct TimeNumberField: View {
             value = (base - range.lowerBound + delta + count) % count + range.lowerBound
             text = String(format: "%02d", value); valid = true
         } label: { Image(systemName: symbol).font(.system(size: 9, weight: .semibold)).foregroundStyle(palette.muted).frame(width: 23, height: 27).contentShape(Rectangle()) }
-            .buttonStyle(.plain).help("\(delta < 0 ? "Diminuir" : "Aumentar") \(title.lowercased())")
+            .buttonStyle(.plain).help("\(delta < 0 ? L10n.tr("Diminuir") : L10n.tr("Aumentar")) \(L10n.tr(title).lowercased())")
     }
 }

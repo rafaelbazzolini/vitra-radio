@@ -29,7 +29,7 @@ enum UpdateInstaller {
         try process.run()
         let data = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw AppUpdateError(message: "Não foi possível validar ou preparar a atualização.") }
+        guard process.terminationStatus == 0 else { throw AppUpdateError(message: L10n.tr("Não foi possível validar ou preparar a atualização.")) }
         return String(data: data, encoding: .utf8) ?? ""
     }
 
@@ -40,24 +40,24 @@ enum UpdateInstaller {
             return String(fields[0]).lowercased()
         }
         guard matches.count == 1, matches[0].range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil else {
-            throw AppUpdateError(message: "A release não contém um checksum válido para o app.")
+            throw AppUpdateError(message: L10n.tr("A release não contém um checksum válido para o app."))
         }
         let file = try FileHandle(forReadingFrom: archive)
         defer { try? file.close() }
         var hash = SHA256()
         while let data = try file.read(upToCount: 1_048_576), !data.isEmpty { hash.update(data: data) }
         let actual = hash.finalize().map { String(format: "%02x", $0) }.joined()
-        guard actual == matches[0] else { throw AppUpdateError(message: "O pacote está incompleto ou foi alterado. Tente atualizar novamente.") }
+        guard actual == matches[0] else { throw AppUpdateError(message: L10n.tr("O pacote está incompleto ou foi alterado. Tente atualizar novamente.")) }
     }
 
     static func validateArchiveEntries(_ listing: String) throws {
         let paths = listing.split(whereSeparator: \.isNewline)
-        guard !paths.isEmpty, paths.count <= 10_000 else { throw AppUpdateError(message: "Pacote de atualização inválido.") }
+        guard !paths.isEmpty, paths.count <= 10_000 else { throw AppUpdateError(message: L10n.tr("Pacote de atualização inválido.")) }
         for path in paths {
             let parts = path.split(separator: "/")
             guard !path.hasPrefix("/"), !path.contains("\\"), !parts.contains(".."),
                   parts.first == "Vitra Radio.app" || parts.first == "__MACOSX" else {
-                throw AppUpdateError(message: "O pacote contém caminhos inválidos.")
+                throw AppUpdateError(message: L10n.tr("O pacote contém caminhos inválidos."))
             }
         }
     }
@@ -69,7 +69,7 @@ enum UpdateInstaller {
             let fields = line.split(whereSeparator: \.isWhitespace)
             guard (first == "-" || first == "d"), fields.count >= 4, let bytes = Int(fields[3]), bytes >= 0,
                   bytes <= 300_000_000 - size else {
-                throw AppUpdateError(message: "O pacote contém links, arquivos especiais ou excede o tamanho permitido.")
+                throw AppUpdateError(message: L10n.tr("O pacote contém links, arquivos especiais ou excede o tamanho permitido."))
             }
             size += bytes
         }
@@ -85,16 +85,16 @@ enum UpdateInstaller {
               info["CFBundleExecutable"] as? String == "VitraRadio",
               version == nil || info["CFBundleShortVersionString"] as? String == version,
               fm.isExecutableFile(atPath: app.appendingPathComponent("Contents/MacOS/VitraRadio").path) else {
-            throw AppUpdateError(message: "O pacote não corresponde à versão esperada do Vitra Radio.")
+            throw AppUpdateError(message: L10n.tr("O pacote não corresponde à versão esperada do Vitra Radio."))
         }
         // The native app has no symlinks. Reject links before launching a downloaded executable.
         guard let files = fm.enumerator(at: app, includingPropertiesForKeys: [.isSymbolicLinkKey, .fileSizeKey]) else {
-            throw AppUpdateError(message: "Não foi possível inspecionar o pacote.")
+            throw AppUpdateError(message: L10n.tr("Não foi possível inspecionar o pacote."))
         }
         var total = 0
         for case let file as URL in files {
             let values = try file.resourceValues(forKeys: [.isSymbolicLinkKey, .fileSizeKey])
-            guard values.isSymbolicLink != true else { throw AppUpdateError(message: "O pacote contém links não permitidos.") }
+            guard values.isSymbolicLink != true else { throw AppUpdateError(message: L10n.tr("O pacote contém links não permitidos.")) }
             total += values.fileSize ?? 0
             guard total <= 300_000_000 else { throw AppUpdateError(message: "O pacote excede o tamanho permitido.") }
         }
@@ -106,7 +106,7 @@ enum UpdateInstaller {
         let required = "x86_64"
         #endif
         guard architectures.split(separator: " ").map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }).contains(required) else {
-            throw AppUpdateError(message: "Esta atualização não é compatível com o processador deste Mac.")
+            throw AppUpdateError(message: L10n.tr("Esta atualização não é compatível com o processador deste Mac."))
         }
     }
 
@@ -115,7 +115,7 @@ enum UpdateInstaller {
         try validateBundle(target)
         let parent = target.deletingLastPathComponent()
         guard fm.isWritableFile(atPath: parent.path), !target.path.hasPrefix("/Volumes/") else {
-            throw AppUpdateError(message: "Mova o Vitra Radio para Aplicativos em uma pasta com permissão de escrita antes de atualizar.")
+            throw AppUpdateError(message: L10n.tr("Mova o Vitra Radio para Aplicativos em uma pasta com permissão de escrita antes de atualizar."))
         }
         try verifyChecksum(archive: archive, checksums: checksums)
         let listing = try run("/usr/bin/unzip", ["-Z1", archive.path])
@@ -153,12 +153,12 @@ enum UpdateInstaller {
     /// A launch failure swaps the original app back before returning the error.
     static func replaceAndLaunch(target: URL, staged: URL, launch: (URL) throws -> Void) throws {
         guard renameatx_np(AT_FDCWD, staged.path, AT_FDCWD, target.path, UInt32(RENAME_SWAP)) == 0 else {
-            throw AppUpdateError(message: "Não foi possível substituir o aplicativo. A versão anterior foi mantida.")
+            throw AppUpdateError(message: L10n.tr("Não foi possível substituir o aplicativo. A versão anterior foi mantida."))
         }
         do { try launch(target) }
         catch {
             let restored = renameatx_np(AT_FDCWD, staged.path, AT_FDCWD, target.path, UInt32(RENAME_SWAP)) == 0
-            if !restored { throw AppUpdateError(message: "A reabertura falhou. A cópia anterior foi preservada em \(staged.path).") }
+            if !restored { throw AppUpdateError(message: L10n.tr("A reabertura falhou. A cópia anterior foi preservada em \(staged.path).")) }
             throw error
         }
     }
@@ -171,7 +171,7 @@ enum UpdateInstaller {
                   plan.staged.deletingLastPathComponent() == plan.target.deletingLastPathComponent(),
                   plan.staged.lastPathComponent.hasPrefix(".vitra-update-"),
                   plan.workspace == planURL.deletingLastPathComponent() else {
-                throw AppUpdateError(message: "Plano de atualização inválido.")
+                throw AppUpdateError(message: L10n.tr("Plano de atualização inválido."))
             }
             try validateBundle(plan.staged, version: plan.version)
             try validateBundle(plan.target)
@@ -180,7 +180,7 @@ enum UpdateInstaller {
                 Thread.sleep(forTimeInterval: 0.1)
             }
             guard kill(plan.parentPID, 0) != 0 && errno == ESRCH else {
-                throw AppUpdateError(message: "O Vitra Radio ainda está aberto. A versão instalada foi mantida.")
+                throw AppUpdateError(message: L10n.tr("O Vitra Radio ainda está aberto. A versão instalada foi mantida."))
             }
             try replaceAndLaunch(target: plan.target, staged: plan.staged) { target in
                 _ = try run("/usr/bin/open", ["-n", target.path])

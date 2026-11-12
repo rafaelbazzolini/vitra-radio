@@ -37,7 +37,7 @@ struct MusicServerClient {
         case .subsonic:
             let secret = password.isEmpty ? credential.password : password
             guard !profile.username.trimmingCharacters(in: .whitespaces).isEmpty, !secret.isEmpty else {
-                throw MusicServerError.message("Informe o usuário e a senha da sua conta no servidor.")
+                throw MusicServerError.message(L10n.tr("Informe o usuário e a senha da sua conta no servidor."))
             }
             let credential = MusicCredential(password: secret)
             let client = MusicServerClient(profile: profile, credential: credential, session: session)
@@ -48,12 +48,12 @@ struct MusicServerClient {
                 _ = try await jellyfin("Users/\(credential.userID)")
                 return credential
             }
-            guard !profile.username.trimmingCharacters(in: .whitespaces).isEmpty else { throw MusicServerError.message("Informe seu usuário no Jellyfin.") }
+            guard !profile.username.trimmingCharacters(in: .whitespaces).isEmpty else { throw MusicServerError.message(L10n.tr("Informe seu usuário no Jellyfin.")) }
             let data = try JSONSerialization.data(withJSONObject: ["Username": profile.username, "Pw": password])
             let object = try await jellyfin("Users/AuthenticateByName", body: data)
             guard let token = object["AccessToken"] as? String,
                   let user = object["User"] as? [String: Any], let id = user["Id"] as? String else {
-                throw MusicServerError.message("O Jellyfin não retornou uma sessão válida.")
+                throw MusicServerError.message(L10n.tr("O Jellyfin não retornou uma sessão válida."))
             }
             return MusicCredential(token: token, userID: id)
         }
@@ -66,14 +66,14 @@ struct MusicServerClient {
             let rows = (object["albumList2"] as? [String: Any])?["album"] as? [[String: Any]] ?? []
             return (rows.compactMap { row in
                 guard let id = row["id"] as? String else { return nil }
-                return MusicAlbum(id: id, title: row["name"] as? String ?? "Álbum", artist: row["artist"] as? String ?? "Artista desconhecido", count: row["songCount"] as? Int ?? 0)
+                return MusicAlbum(id: id, title: row["name"] as? String ?? L10n.tr("Álbum"), artist: row["artist"] as? String ?? "Artista desconhecido", count: row["songCount"] as? Int ?? 0)
             }, rows.count == 40)
         case .jellyfin:
             let object = try await jellyfin("Users/\(credential.userID)/Items", parameters: ["IncludeItemTypes": "MusicAlbum", "Recursive": "true", "SortBy": "DateCreated", "SortOrder": "Descending", "StartIndex": String(offset), "Limit": "40"])
             let rows = object["Items"] as? [[String: Any]] ?? []
             return (rows.compactMap { row in
                 guard let id = row["Id"] as? String else { return nil }
-                return MusicAlbum(id: id, title: row["Name"] as? String ?? "Álbum", artist: row["AlbumArtist"] as? String ?? "Sua biblioteca", count: row["ChildCount"] as? Int ?? 0)
+                return MusicAlbum(id: id, title: row["Name"] as? String ?? L10n.tr("Álbum"), artist: row["AlbumArtist"] as? String ?? L10n.tr("Sua biblioteca"), count: row["ChildCount"] as? Int ?? 0)
             }, offset + rows.count < (object["TotalRecordCount"] as? Int ?? rows.count))
         case .folder: return ([], false)
         }
@@ -133,10 +133,10 @@ struct MusicServerClient {
         request.httpBody = form.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B").data(using: .utf8)
         request.setValue("application/x-www-form-urlencoded; charset=utf-8", forHTTPHeaderField: "Content-Type")
         let object = try await json(request)
-        guard let response = object["subsonic-response"] as? [String: Any] else { throw MusicServerError.message("Esse endereço não retornou uma API Subsonic. Confira o tipo de servidor e o endereço base.") }
+        guard let response = object["subsonic-response"] as? [String: Any] else { throw MusicServerError.message(L10n.tr("Esse endereço não retornou uma API Subsonic. Confira o tipo de servidor e o endereço base.")) }
         if response["status"] as? String != "ok" {
             let code = (response["error"] as? [String: Any])?["code"] as? Int ?? 0
-            throw MusicServerError.message(code == 40 ? "Usuário ou senha não aceitos pelo servidor." : "O servidor não permitiu essa operação (código \(code)).")
+            throw MusicServerError.message(code == 40 ? L10n.tr("Usuário ou senha não aceitos pelo servidor.") : L10n.tr("O servidor não permitiu essa operação (código \(code))."))
         }
         return response
     }
@@ -160,9 +160,9 @@ struct MusicServerClient {
         let (data, response) = try await session.data(for: request)
         try Task.checkCancellation()
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
-        if http.statusCode == 401 || http.statusCode == 403 { throw MusicServerError.message("Acesso não autorizado. Confira usuário, senha e permissões da conta.") }
-        guard (200..<300).contains(http.statusCode) else { throw MusicServerError.message("O servidor respondeu com erro \(http.statusCode). Confira o endereço e o tipo de servidor.") }
-        guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { throw MusicServerError.message("O endereço retornou uma página em vez da biblioteca. Informe o endereço base do serviço, sem /web ou a página de login.") }
+        if http.statusCode == 401 || http.statusCode == 403 { throw MusicServerError.message(L10n.tr("Acesso não autorizado. Confira usuário, senha e permissões da conta.")) }
+        guard (200..<300).contains(http.statusCode) else { throw MusicServerError.message(L10n.tr("O servidor respondeu com erro \(http.statusCode). Confira o endereço e o tipo de servidor.")) }
+        guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { throw MusicServerError.message(L10n.tr("O endereço retornou uma página em vez da biblioteca. Informe o endereço base do serviço, sem /web ou a página de login.")) }
         return object
     }
 

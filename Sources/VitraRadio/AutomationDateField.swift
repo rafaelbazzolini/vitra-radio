@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AutomationDateField: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @Binding var selection: AutomationDate?
     @State private var showingCalendar = false
@@ -9,7 +10,7 @@ struct AutomationDateField: View {
     private var selected: Date { selection?.date(calendar: calendar) ?? Date() }
     private func label(_ date: Date, format: String) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = L10n.locale
         formatter.calendar = calendar
         formatter.dateFormat = format
         return formatter.string(from: date)
@@ -22,16 +23,16 @@ struct AutomationDateField: View {
             Image(systemName: "calendar").font(.system(size: 18)).foregroundStyle(palette.accent)
                 .frame(width: 36, height: 36).background(palette.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 9))
             VStack(alignment: .leading, spacing: 4) {
-                Text("DATA DE INÍCIO").font(.system(size: 8, weight: .bold)).tracking(1).foregroundStyle(palette.muted)
+                Text(L10n.tr("DATA DE INÍCIO")).font(.system(size: 8, weight: .bold)).tracking(1).foregroundStyle(palette.muted)
                 Button {
                     displayedMonth = selected
                     showingCalendar.toggle()
                 } label: {
                     HStack(spacing: 8) {
-                        Text(label(selected, format: "dd 'de' MMMM 'de' yyyy")).font(.system(size: 13, weight: .semibold))
+                        Text(label(selected, format: L10n.tr("dd 'de' MMMM 'de' yyyy"))).font(.system(size: 13, weight: .semibold))
                         Image(systemName: "chevron.down").font(.system(size: 9, weight: .semibold)).foregroundStyle(palette.accent)
                     }.contentShape(Rectangle())
-                }.buttonStyle(.plain).help("Escolher data no calendário")
+                }.buttonStyle(.plain).help(L10n.tr("Escolher data no calendário"))
                 .popover(isPresented: $showingCalendar, arrowEdge: .bottom) { calendarPanel }
             }
             Spacer(minLength: 4)
@@ -48,7 +49,7 @@ struct AutomationDateField: View {
             Image(systemName: icon).font(.system(size: 10, weight: .semibold)).frame(width: 28, height: 28)
                 .background(palette.background.opacity(0.5), in: RoundedRectangle(cornerRadius: 7))
                 .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(palette.line)).contentShape(Rectangle())
-        }.buttonStyle(.plain).help(help).accessibilityLabel(help)
+        }.buttonStyle(.plain).help(L10n.tr(help)).accessibilityLabel(L10n.tr(help))
     }
     private var monthStart: Date { calendar.dateInterval(of: .month, for: displayedMonth)!.start }
     private var monthOffset: Int { (calendar.component(.weekday, from: monthStart) + 5) % 7 }
@@ -63,7 +64,7 @@ struct AutomationDateField: View {
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 6) {
                 ForEach(["S", "T", "Q", "Q", "S", "S", "D"].indices, id: \.self) { index in
-                    Text(["S", "T", "Q", "Q", "S", "S", "D"][index]).font(.system(size: 10, weight: .semibold)).foregroundStyle(palette.muted).frame(height: 22)
+                    Text(label(calendar.date(from: DateComponents(year: 2024, month: 1, day: index + 1))!, format: "EEEEE")).font(.system(size: 10, weight: .semibold)).foregroundStyle(palette.muted).frame(height: 22)
                 }
                 ForEach(0..<(monthOffset + monthCount), id: \.self) { index in
                     if index < monthOffset { Color.clear.frame(height: 32) }
@@ -80,14 +81,14 @@ struct AutomationDateField: View {
                                 .background(active ? palette.accent : .clear, in: RoundedRectangle(cornerRadius: 8))
                                 .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(calendar.isDateInToday(date) && !active ? palette.accent.opacity(0.5) : .clear))
                                 .contentShape(Rectangle())
-                        }.buttonStyle(.plain).accessibilityLabel(label(date, format: "dd 'de' MMMM 'de' yyyy"))
+                        }.buttonStyle(.plain).accessibilityLabel(label(date, format: L10n.tr("dd 'de' MMMM 'de' yyyy")))
                     }
                 }
             }
             HStack {
                 Text(label(selected, format: "EEEE").capitalized).font(.system(size: 11)).foregroundStyle(palette.muted)
                 Spacer()
-                Button("Hoje") { selection = AutomationDate(Date()); displayedMonth = Date(); showingCalendar = false }
+                Button(L10n.tr("Hoje")) { selection = AutomationDate(Date()); displayedMonth = Date(); showingCalendar = false }
                     .buttonStyle(VitraButtonStyle(compact: true))
             }
         }.padding(18).frame(width: 310).background(palette.background).foregroundStyle(palette.text)

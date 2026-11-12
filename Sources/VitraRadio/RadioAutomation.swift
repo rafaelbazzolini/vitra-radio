@@ -15,7 +15,10 @@ struct AutomationDate: Codable, Equatable {
               calendar.component(.day, from: date) == day else { return nil }
         return date
     }
-    var label: String { String(format: "%02d/%02d/%04d", day, month, year) }
+    var label: String {
+        guard let value = date(calendar: Calendar(identifier: .gregorian)) else { return String(format: "%02d/%02d/%04d", day, month, year) }
+        return value.formatted(.dateTime.locale(L10n.locale).day().month(.abbreviated).year())
+    }
 }
 
 struct RadioAutomation: Codable, Identifiable, Equatable {
@@ -39,7 +42,7 @@ struct RadioAutomation: Codable, Identifiable, Equatable {
     var endTime: Int? { guard let endHour, let endMinute else { return nil }; return endHour * 60 + endMinute }
     var endsNextDay: Bool { endTime.map { $0 < startMinute } ?? false }
     var endLabel: String? { guard let endHour, let endMinute else { return nil }; return String(format: "%02d:%02d", endHour, endMinute) }
-    var periodLabel: String { timeLabel + (endLabel.map { "–" + $0 + (endsNextDay ? " (+1 dia)" : "") } ?? " · sem término") }
+    var periodLabel: String { timeLabel + (endLabel.map { "–" + $0 + (endsNextDay ? L10n.tr(" (+1 dia)") : "") } ?? L10n.tr(" · sem término")) }
     var isValid: Bool {
         guard (0...23).contains(hour), (0...59).contains(minute), (specificDate.map { $0.date(calendar: .current) != nil } ?? (!weekdays.isEmpty && weekdays.allSatisfy { (1...7).contains($0) })), station.station?.isLive == true else { return false }
         if endHour == nil && endMinute == nil { return true } // Existing start-only schedules remain readable.
@@ -85,7 +88,7 @@ struct RadioAutomation: Codable, Identifiable, Equatable {
         }.min()
     }
     static let days: [(Int, String)] = [(2, "Seg"), (3, "Ter"), (4, "Qua"), (5, "Qui"), (6, "Sex"), (7, "Sáb"), (1, "Dom")]
-    var daysLabel: String { if let specificDate { return "\(specificDate.label) · uma vez · prioridade" }; return Self.days.filter { weekdays.contains($0.0) }.map(\.1).joined(separator: " · ") }
+    var daysLabel: String { if let specificDate { return L10n.tr("\(specificDate.label) · uma vez · prioridade") }; return Self.days.filter { weekdays.contains($0.0) }.map { L10n.tr($0.1) }.joined(separator: " · ") }
 }
 
 @MainActor final class RadioAutomationStore: ObservableObject {
@@ -125,9 +128,9 @@ struct RadioAutomation: Codable, Identifiable, Equatable {
         lastRuns = preferences.dictionary(forKey: "radioAutomationRuns") as? [String: String] ?? [:]
     }
     func validationError(for rule: RadioAutomation) -> String? {
-        guard rule.isValid else { return "Escolha uma rádio, pelo menos um dia e horários válidos. O término deve ser diferente do início." }
+        guard rule.isValid else { return L10n.tr("Escolha uma rádio, pelo menos um dia e horários válidos. O término deve ser diferente do início.") }
         if let other = rules.first(where: { rule.duplicates($0) }) {
-            return "Já existe um período com início e término idênticos: \(other.station.name), \(other.periodLabel) (\(other.daysLabel)). Altere o período ou os dias."
+            return L10n.tr("Já existe um período com início e término idênticos: \(other.station.name), \(other.periodLabel) (\(other.daysLabel)). Altere o período ou os dias.")
         }
         return nil
     }
@@ -212,7 +215,7 @@ struct RadioAutomation: Codable, Identifiable, Equatable {
         let previous = currentRun
         if let winner, winner.sameOccurrence(as: currentRun) { currentRun = winner; return }
         if let previous, canResume(previous.rule), !candidates.contains(where: { $0.sameOccurrence(as: previous) }) {
-            lastMessage = "Período encerrado · \(previous.rule.station.name)"
+            lastMessage = L10n.tr("Período encerrado · \(previous.rule.station.name)")
             finish(previous.rule)
         }
         currentRun = winner

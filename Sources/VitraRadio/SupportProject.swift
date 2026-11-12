@@ -17,14 +17,15 @@ struct ProjectSupport: Decodable {
 }
 
 struct SupportProjectButton: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @State private var showingSupport = false
     var body: some View {
         Button { showingSupport = true } label: {
-            Label("Apoiar", systemImage: "heart").font(.system(size: 11, weight: .semibold))
+            Label(L10n.tr("Apoiar"), systemImage: "heart").font(.system(size: 11, weight: .semibold))
                 .padding(.horizontal, 11).padding(.vertical, 8)
                 .foregroundStyle(palette.muted).contentShape(Capsule())
-        }.buttonStyle(.plain).help("Apoiar o desenvolvimento do Vitra Radio")
+        }.buttonStyle(.plain).help(L10n.tr("Apoiar o desenvolvimento do Vitra Radio"))
             .sheet(isPresented: $showingSupport) {
                 SupportProjectView().frame(width: 500, height: 350)
                     .overlay(alignment: .topTrailing) {
@@ -36,21 +37,22 @@ struct SupportProjectButton: View {
 }
 
 struct SupportProjectView: View {
+    @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     private let support = ProjectSupport.current
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Image(systemName: "heart.circle").font(.system(size: 42, weight: .light)).foregroundStyle(palette.accent)
-            Text("Ajude o Vitra a continuar tocando.").font(.system(size: 25, weight: .semibold))
-            Text("Se o Vitra faz parte do seu dia, uma contribuição voluntária ajuda a manter o projeto e desenvolver novas funções.")
+            Text(L10n.tr("Ajude o Vitra a continuar tocando.")).font(.system(size: 25, weight: .semibold))
+            Text(L10n.tr("Se o Vitra faz parte do seu dia, uma contribuição voluntária ajuda a manter o projeto e desenvolver novas funções."))
                 .font(.system(size: 13)).foregroundStyle(palette.muted).lineSpacing(4)
             if let destination = support.destination {
-                Link(destination: destination) { Label("Fazer uma contribuição", systemImage: "arrow.up.right") }
+                Link(destination: destination) { Label(L10n.tr("Fazer uma contribuição"), systemImage: "arrow.up.right") }
                     .buttonStyle(VitraButtonStyle())
-                Text("Você escolhe o valor. O pagamento é feito no site do provedor; o Vitra não recebe dados de cartão.")
+                Text(L10n.tr("Você escolhe o valor. O pagamento é feito no site do provedor; o Vitra não recebe dados de cartão."))
                     .font(.system(size: 11)).foregroundStyle(palette.muted)
             } else {
-                Text("O canal de doações ainda está sendo preparado.")
+                Text(L10n.tr("O canal de doações ainda está sendo preparado."))
                     .font(.system(size: 12, weight: .medium)).foregroundStyle(palette.accent)
             }
             Spacer(minLength: 0)
