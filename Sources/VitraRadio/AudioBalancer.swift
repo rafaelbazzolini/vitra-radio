@@ -113,7 +113,8 @@ enum AudioBalanceTap {
         })
         var tap: MTAudioProcessingTap?
         let status: OSStatus
-        if #available(macOS 27.0, *) {
+        if trackID == nil {
+            guard #available(macOS 27.0, *) else { state.release(); return nil }
             let format = AVAudioFormat(standardFormatWithSampleRate: 48_000, channels: 2)!
             // Resolve at runtime so release builds also compile with the macOS 26 SDK.
             typealias CreateTap = @convention(c) (CFAllocator?, UnsafePointer<MTAudioProcessingTapCallbacks>, MTAudioProcessingTapCreationFlags, CMAudioFormatDescription?, UnsafeMutablePointer<MTAudioProcessingTap?>) -> OSStatus
@@ -121,7 +122,6 @@ enum AudioBalanceTap {
             let create = unsafeBitCast(symbol, to: CreateTap.self)
             status = create(kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PreEffects, format.formatDescription, &tap)
         } else {
-            guard trackID != nil else { state.release(); return nil }
             status = MTAudioProcessingTapCreate(kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PreEffects, &tap)
         }
         guard status == noErr, let tap else { state.release(); return nil }

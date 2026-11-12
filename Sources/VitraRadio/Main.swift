@@ -15,6 +15,14 @@ struct VitraRadioMain {
             SelfTests.run()
             return
         }
+        if CommandLine.arguments.contains("--verify-country-catalog") || CommandLine.arguments.contains("--verify-mini-vu") {
+            let application = NSApplication.shared
+            application.setActivationPolicy(.prohibited)
+            if CommandLine.arguments.contains("--verify-mini-vu") { MiniVUVerification.start() }
+            else { CountryCatalogTests.start() }
+            application.run()
+            return
+        }
         if CommandLine.arguments.contains("--verify-playback") {
             let application = NSApplication.shared
             application.setActivationPolicy(.prohibited)
@@ -33,6 +41,13 @@ struct VitraRadioMain {
             let application = NSApplication.shared
             application.setActivationPolicy(.prohibited)
             CatalogVerification.start()
+            application.run()
+            return
+        }
+        if CommandLine.arguments.contains("--verify-player-meter") {
+            let application = NSApplication.shared
+            application.setActivationPolicy(.prohibited)
+            AudioBalanceVerification.verifyPlayerMeter()
             application.run()
             return
         }

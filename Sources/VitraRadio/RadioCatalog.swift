@@ -31,12 +31,19 @@ struct CatalogStation: Decodable {
 
 struct CatalogQuery: Equatable, Hashable {
     var name = ""
-    var brazilOnly = true
+    var countryCodes: [String] = ["BR"]
+    var brazilOnly: Bool {
+        get { countryCodes == ["BR"] }
+        set { countryCodes = newValue ? ["BR"] : [] }
+    }
+    init(name: String = "", brazilOnly: Bool = true) { self.name = name; self.countryCodes = brazilOnly ? ["BR"] : [] }
+    init(name: String = "", countryCodes: [String]) { self.name = name; self.countryCodes = countryCodes }
 }
 
 struct CatalogPage {
     let stations: [Station]
     let rawCount: Int
+    var hasMore: Bool = false
 }
 
 struct RadioCatalogClient {
@@ -44,6 +51,22 @@ struct RadioCatalogClient {
     var session: URLSession = .shared
 
     func search(_ query: CatalogQuery, offset: Int = 0) async throws -> CatalogPage {
+        let codes = Array(Set(query.countryCodes)).sorted()
+        if codes.count > 1 {
+            let pages = try await withThrowingTaskGroup(of: (Int, CatalogPage).self) { group in
+                for (index, code) in codes.enumerated() {
+                    group.addTask { (index, try await self.search(CatalogQuery(name: query.name, countryCodes: [code]), offset: offset)) }
+                }
+                var collected: [(Int, CatalogPage)] = []
+                for try await page in group { collected.append(page) }
+                return collected.sorted { $0.0 < $1.0 }.map { $0.1 }
+            }
+            var mixed: [Station] = []
+            for row in 0..<(pages.map { $0.stations.count }.max() ?? 0) {
+                for page in pages where row < page.stations.count { mixed.append(page.stations[row]) }
+            }
+            return CatalogPage(stations: mixed, rawCount: pages.reduce(0) { $0 + $1.rawCount }, hasMore: pages.contains { $0.hasMore })
+        }
         // O DNS distribui as conexões entre os espelhos públicos do diretório.
         var components = URLComponents(string: "https://all.api.radio-browser.info/json/stations/search")!
         components.queryItems = [
@@ -53,7 +76,7 @@ struct RadioCatalogClient {
             URLQueryItem(name: "limit", value: String(Self.pageSize)),
             URLQueryItem(name: "offset", value: String(offset))
         ]
-        if query.brazilOnly { components.queryItems?.append(URLQueryItem(name: "countrycode", value: "BR")) }
+        if let code = codes.first { components.queryItems?.append(URLQueryItem(name: "countrycode", value: code)) }
         let name = query.name.trimmingCharacters(in: .whitespacesAndNewlines)
         if !name.isEmpty { components.queryItems?.append(URLQueryItem(name: "name", value: name)) }
         var request = URLRequest(url: components.url!)
@@ -64,7 +87,7 @@ struct RadioCatalogClient {
         try Task.checkCancellation()
         guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else { throw URLError(.badServerResponse) }
         let records = try JSONDecoder().decode([CatalogStation].self, from: data)
-        return CatalogPage(stations: records.compactMap(\.station), rawCount: records.count)
+        return CatalogPage(stations: records.compactMap(\.station), rawCount: records.count, hasMore: records.count == Self.pageSize)
     }
 }
 
@@ -126,8 +149,8 @@ final class RadioCatalog: ObservableObject {
             ids.insert(station.id); streams.insert(station.stream)
             return true
         }
-        offset += page.rawCount
-        hasMore = page.rawCount == RadioCatalogClient.pageSize
+        offset += RadioCatalogClient.pageSize
+        hasMore = page.hasMore
         isLoading = false
     }
 }

@@ -78,6 +78,7 @@ enum SelfTests {
         check(FrequencyScale.position(87.5) == 0 && FrequencyScale.position(108) == 1, "Extremos da faixa FM coincidem com a escala")
         failures += AutomationTests.run()
         failures += UpdateTests.run()
+        failures += CountryCatalogTests.preferences()
         print("\(failures == 0 ? "SELF_TEST_OK" : "SELF_TEST_FAILED"): \(failures) falhas")
         if failures > 0 { exit(1) }
     }

@@ -4,6 +4,9 @@ Esta versão é gerada do commit de `main` indicado na release, após as verific
 
 ### Novidades no macOS
 
+- País sugerido na primeira abertura e seleção de vários países, com resultados misturados e paginação por país.
+- Correção do redesenho do VU no miniplayer e botão Apoiar, com destino de doação configurável pelo mantenedor.
+
 - Aviso dentro do app e botão Atualizar e reiniciar: baixa, valida e substitui a instalação sem abrir DMG, preservando as preferências.
 
 - Ajustes reúne Servidor, Temas, Automação e Miniplayer em abas.

@@ -7,6 +7,7 @@ struct ClassicRadioView: View {
     @EnvironmentObject private var radio: RadioPlayer
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var servers: MusicServerStore
+    @EnvironmentObject private var countries: CatalogCountries
     @State private var page: Page = .explore
     @StateObject private var catalog = RadioCatalog()
     @State private var search = ""
@@ -38,6 +39,7 @@ struct ClassicRadioView: View {
         .foregroundStyle(palette.text)
         .preferredColorScheme(.dark)
         .frame(minWidth: 1000, minHeight: 710)
+        .onChange(of: countries.needsSetup) { value in if !value && radio.favoriteStations.isEmpty { page = .catalog } }
         .onChange(of: servers.activeProfile?.id) { value in if value == nil && page == .server { page = .settings } }
         .onAppear {
             if CommandLine.arguments.contains("--settings-preview") { page = .settings }
@@ -136,6 +138,7 @@ struct ClassicRadioView: View {
                             .font(.system(size: 29, weight: .semibold)).tracking(-1.1)
                     }
                     Spacer()
+                    SupportProjectButton()
                     ThemeQuickMenu()
                     HStack(spacing: 7) {
                         Image(systemName: "magnifyingglass").font(.system(size: 12))

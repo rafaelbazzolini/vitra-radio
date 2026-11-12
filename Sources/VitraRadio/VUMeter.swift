@@ -36,6 +36,10 @@ final class AudioMeterLevels {
             return Double(Float(bitPattern: UInt32(truncatingIfNeeded: right ? bits >> 32 : bits)))
         }
     }
+    var hasRecentSamples: Bool {
+        let timestamp = UInt64(bitPattern: OSAtomicAdd64Barrier(0, stamp))
+        return timestamp > 0 && Double(mach_absolute_time() - timestamp) * secondsPerTick < 0.3
+    }
     func read() -> (Double, Double) {
         let timestamp = UInt64(bitPattern: OSAtomicAdd64Barrier(0, stamp))
         guard timestamp > 0, Double(mach_absolute_time() - timestamp) * secondsPerTick < 0.3 else { return (0, 0) }

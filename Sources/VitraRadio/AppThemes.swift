@@ -21,6 +21,7 @@ extension EnvironmentValues {
 }
 
 struct RadioView: View {
+    @EnvironmentObject private var countries: CatalogCountries
     @EnvironmentObject private var app: AppController
     var body: some View {
         VStack(spacing: 0) {
@@ -32,6 +33,11 @@ struct RadioView: View {
         }.environment(\.appPalette, AppPalette(skin: app.playerSkin, accentOverride: app.accentColorHex))
             .environment(\.colorScheme, app.playerSkin == .studio ? .light : .dark)
             .tint(app.playerSkin.design.overridingAccent(app.accentColorHex).highlight)
+            .sheet(isPresented: Binding(get: { countries.needsSetup }, set: { _ in })) {
+                CatalogCountriesView(onboarding: true).frame(width: 620, height: 680)
+                    .environment(\.appPalette, AppPalette(skin: app.playerSkin, accentOverride: app.accentColorHex))
+                    .interactiveDismissDisabled()
+            }
     }
 }
 
@@ -55,6 +61,7 @@ struct ThemedRadioWindow: View {
     @EnvironmentObject private var app: AppController
     @EnvironmentObject private var radio: RadioPlayer
     @EnvironmentObject private var servers: MusicServerStore
+    @EnvironmentObject private var countries: CatalogCountries
     @StateObject private var catalog = RadioCatalog()
     @State private var page: ThemePage = .explore
     @State private var search = ""
@@ -74,6 +81,7 @@ struct ThemedRadioWindow: View {
         }.background { SkinSurface(skin: skin) }.foregroundStyle(design.ink)
             .preferredColorScheme(skin == .studio ? .light : .dark)
             .frame(minWidth: 1000, minHeight: 710)
+            .onChange(of: countries.needsSetup) { value in if !value && radio.favoriteStations.isEmpty { page = .catalog } }
             .onChange(of: servers.activeProfile?.id) { value in if value == nil && page == .server { page = .settings } }
             .onAppear {
                 if CommandLine.arguments.contains("--automation-preview") { page = .automation }
@@ -89,6 +97,7 @@ struct ThemedRadioWindow: View {
             Text(design.name.uppercased()).font(.system(size: 10, weight: .semibold, design: .monospaced)).tracking(3).foregroundStyle(design.highlight)
             Spacer()
             if skin == .digital { Text("NETWORK AUDIO RECEIVER / 01").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundStyle(design.secondary) }
+            SupportProjectButton()
             ThemeQuickMenu()
             VUStyleMenu()
             Button { app.showMini() } label: { Label("Miniplayer", systemImage: "pip").font(.system(size: 11, weight: .semibold)).padding(8).contentShape(Rectangle()) }.buttonStyle(.plain)

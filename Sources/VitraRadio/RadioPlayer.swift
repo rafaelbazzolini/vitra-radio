@@ -17,7 +17,7 @@ final class RadioPlayer: ObservableObject {
         }
     }
     @Published var volumeBalancingEnabled: Bool {
-        didSet { preferences.set(volumeBalancingEnabled, forKey: "volumeBalancingEnabled"); configureVolumeBalance() }
+        didSet { preferences.set(volumeBalancingEnabled, forKey: "volumeBalancingEnabled"); if wantsPlayback && selected.isLive { connect() } }
     }
     @Published private(set) var volumeBalanceStatus = "Aguardando reprodução"
     private var balanceTask: Task<Void, Never>?
@@ -232,12 +232,21 @@ final class RadioPlayer: ObservableObject {
         releaseItem()
         state = .connecting
         updateSystemMedia()
-        let asset = AVURLAsset(url: selected.stream, options: [AVURLAssetHTTPUserAgentKey: "VitraRadio/1.0", AVURLAssetPreferPreciseDurationAndTimingKey: false])
+        // HTTP-only options make local AVURLAssets fail while loading audio tracks.
+        let options: [String: Any]? = selected.stream.isFileURL ? nil : [AVURLAssetHTTPUserAgentKey: "VitraRadio/1.0", AVURLAssetPreferPreciseDurationAndTimingKey: false]
+        let asset = AVURLAsset(url: selected.stream, options: options)
         // O inicializador padrão carrega "duration", que pode nunca concluir
         // em uma rádio MP3 sem fim. Só precisamos saber se é reproduzível.
         let item = AVPlayerItem(asset: asset, automaticallyLoadedAssetKeys: selected.isLive ? ["playable"] : ["playable", "duration"])
         item.preferredForwardBufferDuration = 1
-        configureVolumeBalance(for: item)
+        scheduleTimeout(generation: currentGeneration)
+        configureVolumeBalance(for: item) { [weak self] in
+            guard let self, self.generation == currentGeneration, self.wantsPlayback else { return }
+            self.attachPlaybackItem(item, generation: currentGeneration)
+        }
+    }
+
+    private func attachPlaybackItem(_ item: AVPlayerItem, generation currentGeneration: Int) {
         player.replaceCurrentItem(with: item)
 
         itemObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] _, _ in
@@ -280,32 +289,44 @@ final class RadioPlayer: ObservableObject {
         if selected.isLive { player.playImmediately(atRate: 1) }
     }
 
-    private func configureVolumeBalance(for newItem: AVPlayerItem? = nil) {
+    private func configureVolumeBalance(for newItem: AVPlayerItem? = nil, completion: (() -> Void)? = nil) {
         balanceTask?.cancel()
         guard let item = newItem ?? player.currentItem else { return }
-        guard selected.isLive else {
-            item.audioMix = nil
-            volumeBalanceStatus = volumeBalancingEnabled ? "Disponível para rádios" : "Desativado"
-            return
-        }
-        if #available(macOS 27.0, *) {
-            item.audioMix = AudioBalanceTap.makeMix(meter: audioLevels, normalize: volumeBalancingEnabled)
-            volumeBalanceStatus = item.audioMix == nil ? "Não foi possível ativar nesta transmissão" : "Equilíbrio automático configurado"
-        } else if selected.stream.pathExtension.lowercased() == "m3u8" {
-            volumeBalanceStatus = "HLS requer macOS 27 para equilíbrio automático"
+        let expectedGeneration = generation
+        let normalize = selected.isLive && volumeBalancingEnabled
+        let isHLS = selected.stream.pathExtension.lowercased() == "m3u8"
+        if #available(macOS 27.0, *), isHLS {
+            item.audioMix = AudioBalanceTap.makeMix(meter: audioLevels, normalize: normalize)
+            volumeBalanceStatus = item.audioMix == nil ? "Medição indisponível nesta transmissão" : "Processamento de áudio configurado"
+            completion?()
+        } else if isHLS {
+            volumeBalanceStatus = "HLS requer macOS 27 para medição e equilíbrio automático"
+            completion?()
         } else {
-            volumeBalanceStatus = "Preparando equilíbrio automático"
+            volumeBalanceStatus = "Preparando medição do áudio"
             balanceTask = Task { [weak self, weak item] in
                 guard let item else { return }
                 do {
                     let tracks = try await item.asset.loadTracks(withMediaType: .audio)
-                    guard !Task.isCancelled, let self, self.player.currentItem === item, let track = tracks.first else { return }
-                    item.audioMix = AudioBalanceTap.makeMix(trackID: track.trackID, meter: self.audioLevels, normalize: self.volumeBalancingEnabled)
-                    self.volumeBalanceStatus = item.audioMix == nil ? "Não disponível nesta transmissão" : "Equilíbrio automático configurado"
-                } catch { if !Task.isCancelled { self?.volumeBalanceStatus = "Não disponível nesta transmissão" } }
+                    guard !Task.isCancelled, let self, self.generation == expectedGeneration else { return }
+                    if let track = tracks.first {
+                        // Files and direct streams need their real track ID, including on macOS 27.
+                        item.audioMix = AudioBalanceTap.makeMix(trackID: track.trackID, meter: self.audioLevels, normalize: self.selected.isLive && self.volumeBalancingEnabled)
+                    } else if #available(macOS 27.0, *) {
+                        item.audioMix = AudioBalanceTap.makeMix(meter: self.audioLevels, normalize: self.selected.isLive && self.volumeBalancingEnabled)
+                    }
+                    self.volumeBalanceStatus = item.audioMix == nil ? "Medição indisponível nesta transmissão" : "Processamento de áudio configurado"
+                    completion?()
+                } catch {
+                    guard !Task.isCancelled, let self, self.generation == expectedGeneration else { return }
+                    if #available(macOS 27.0, *) {
+                        item.audioMix = AudioBalanceTap.makeMix(meter: self.audioLevels, normalize: self.selected.isLive && self.volumeBalancingEnabled)
+                    }
+                    self.volumeBalanceStatus = item.audioMix == nil ? "Medição indisponível nesta transmissão" : "Processamento de áudio configurado"
+                    completion?()
+                }
             }
         }
-        if !volumeBalancingEnabled { volumeBalanceStatus = "Desativado" }
     }
 
     private func startPreparedPlayback(generation expectedGeneration: Int) {

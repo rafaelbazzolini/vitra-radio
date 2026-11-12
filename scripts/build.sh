@@ -21,6 +21,7 @@ echo "Compilando Vitra Radio para ${ARCH}..."
     scripts/GenerateIcon.swift -o .build/generate-icon
 .build/generate-icon "$PWD/.build/AppIcon.iconset"
 /usr/bin/iconutil -c icns .build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
+cp packaging/support.json "$APP/Contents/Resources/support.json"
 cp packaging/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VITRA_VERSION:-0.1.0}" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VITRA_BUILD:-1}" "$APP/Contents/Info.plist"

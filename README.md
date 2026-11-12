@@ -34,10 +34,10 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 
 ## Começar a ouvir
 
-1. Abra **Todas as rádios** e pesquise no catálogo Radio Browser, ou adicione a URL direta de um stream.
+1. Na primeira abertura do macOS, confirme o país sugerido pela região do sistema ou selecione outros países. Em **Todas as rádios**, pesquise no catálogo Radio Browser ou altere os países pelo botão do globo. A seleção permite até oito países ou o mundo todo.
 2. Use o coração para montar suas favoritas. **Início** alterna entre **Favoritas** e **Recentes**.
 3. Escolha um tema para mudar a aparência.
-4. Em **Automação**, defina rádio, dias ou uma data completa, início e término.
+4. Em **Ajustes → Automação**, defina rádio, dias ou uma data completa, início e término.
 
 **A instalação começa vazia:** não há rádios, servidores, credenciais, favoritas ou programações pessoais embutidas. Nenhuma conta do Vitra é necessária. Dados da biblioteca ficam no dispositivo.
 
@@ -46,6 +46,7 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 | Recurso | Nativo macOS (`Sources/`) | Compartilhado Flutter (`cross_platform/`) |
 |---|---|---|
 | Catálogo Radio Browser e stream por URL | Sim | Sim |
+| País sugerido e seleção de vários países | Sim, até oito países ou mundo todo | Filtro Brasil/Mundo |
 | Favoritas e recentes locais | Sim | Sim |
 | Temas | Layouts próprios: Vitra, Receiver, Studio, Heritage, Signal 90 | Paletas e estilos adaptados à tela |
 | Programação semanal e data específica | Sim, com retomada ao acordar | Sim, enquanto o processo estiver ativo |
@@ -61,6 +62,12 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 O app usa horário e fuso locais. Um período que começa depois assume a reprodução e, quando termina, retoma o anterior se ele ainda estiver vigente. Para o mesmo início, a faixa mais curta vem primeiro. Uma regra com **data específica** tem prioridade sobre semanais e executa somente naquela data; ela não se repete mensalmente. Dois períodos idênticos para os mesmos dias ou data são rejeitados.
 
 Fechar a janela do app nativo mantém o áudio e a barra de menus. **Encerrar**, **⌘Q**, logout, desligamento e reinício podem finalizar o aplicativo. A automação não liga o computador, não abre sozinha o app e não garante execução em aparelhos suspensos. Android e iOS podem suspender processos em segundo plano; não use esta versão como despertador garantido.
+
+### Países e apoio ao projeto
+
+No macOS nativo, a região do sistema sugere um país na primeira abertura, sem GPS ou geolocalização por IP. O usuário confirma a sugestão, seleciona vários países ou escolhe o mundo todo. Os resultados são intercalados e a paginação é independente por país. A escolha fica em Ajustes → Rádios e pode ser alterada a qualquer momento.
+
+O botão **Apoiar** aparece no cabeçalho. O destino de contribuição é configurado em [packaging/support.json](packaging/support.json); enquanto não houver um link HTTPS confirmado, a tela informa que as doações ainda estão sendo preparadas e não oferece cobrança. Consulte [Apoio ao projeto](docs/SUPPORT.md).
 
 ### VU e áudio nativo
 

@@ -3,7 +3,7 @@ import SwiftUI
 struct RadioSettingsView: View {
     @Environment(\.appPalette) private var palette
     @AppStorage("settingsTab") private var tab = "Servidor"
-    private let tabs = ["Servidor", "Temas", "Automação", "Miniplayer", "Atualizações"]
+    private let tabs = ["Rádios", "Servidor", "Temas", "Automação", "Miniplayer", "Atualizações"]
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Ajustes").font(.system(size: 27, weight: .semibold)).padding(.bottom, 18)
@@ -20,6 +20,7 @@ struct RadioSettingsView: View {
             }.padding(.bottom, 16)
             Group {
                 switch tab {
+                case "Rádios": CatalogCountriesView()
                 case "Temas": PlayerThemesView()
                 case "Automação": AutomationView()
                 case "Miniplayer": MiniSettingsView()
@@ -28,7 +29,7 @@ struct RadioSettingsView: View {
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }.padding(.horizontal, 24).padding(.top, 38).foregroundStyle(palette.text)
-            .onAppear { if CommandLine.arguments.contains("--mini-settings-preview") { tab = "Miniplayer" }; if CommandLine.arguments.contains("--updates-preview") { tab = "Atualizações" } }
+            .onAppear { if CommandLine.arguments.contains("--mini-settings-preview") { tab = "Miniplayer" }; if CommandLine.arguments.contains("--updates-preview") { tab = "Atualizações" }; if CommandLine.arguments.contains("--countries-preview") { tab = "Rádios" } }
     }
 }
 
@@ -79,29 +80,58 @@ struct MiniVUBackground: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         if app.miniVUStyle != .off {
-            TimelineView(.animation(minimumInterval: reduceMotion ? 0.12 : 1.0 / 30)) { _ in
-                Canvas { context, size in
-                    let enabled = radio.state.isPlaying && !radio.muted
-                    let levels = radio.audioLevels.read()
-                    if app.miniVUStyle == .digital {
-                        let left = radio.audioLevels.spectrum(right: false)
-                        let right = radio.audioLevels.spectrum(right: true)
+            LiveMiniVU(meter: radio.audioLevels, style: app.miniVUStyle,
+                       enabled: radio.state.isPlaying && !radio.muted, volume: radio.volume)
+        }
+    }
+}
+
+struct LiveMiniVU: View {
+    let meter: AudioMeterLevels
+    let style: VUStyle
+    let enabled: Bool
+    let volume: Double
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        TimelineView(.animation(minimumInterval: reduceMotion ? 0.12 : 1.0 / 30)) { timeline in
+            // Snapshot outside Canvas: changing frame data invalidates its retained drawing.
+            let levels = meter.read()
+            let left = meter.spectrum(right: false)
+            let right = meter.spectrum(right: true)
+            MiniVUCanvas(style: style, enabled: enabled, volume: volume,
+                         levels: [levels.0, levels.1], left: left, right: right, tick: timeline.date)
+        }.clipShape(RoundedRectangle(cornerRadius: 6)).allowsHitTesting(false).accessibilityHidden(true)
+    }
+}
+
+struct MiniVUCanvas: View {
+    @Environment(\.appPalette) private var palette
+    let style: VUStyle
+    let enabled: Bool
+    let volume: Double
+    let levels: [Double]
+    let left: [Double]
+    let right: [Double]
+    let tick: Date
+    var body: some View {
+        Canvas { context, size in
+                    if style == .digital {
                         let gap: CGFloat = 2
                         let width = max(1, (size.width - gap * 7) / 8)
                         for band in 0..<8 {
-                            let amplitude = enabled ? max(left[band], right[band]) * radio.volume : 0
+                            let amplitude = enabled ? max(left[band], right[band]) * volume : 0
                             let db = amplitude > 0.00001 ? 20 * log10(amplitude) : -70
-                            let value = max(0, min(1, (db + 70) / 60))
+                            let value = max(0, min(1, (db + 55) / 45))
                             for row in 0..<12 {
                                 let rect = CGRect(x: CGFloat(band) * (width + gap), y: size.height - CGFloat(row + 1) * size.height / 12, width: width, height: max(1, size.height / 12 - 2))
-                                context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(palette.accent.opacity(value > Double(row) / 12 ? 0.20 : 0.025)))
+                                context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(palette.accent.opacity(value > Double(row) / 12 ? 0.32 : 0.02)))
                             }
                         }
                     } else {
                         for channel in 0..<2 {
-                            let amplitude = enabled ? (channel == 0 ? levels.0 : levels.1) * radio.volume : 0
+                            let amplitude = enabled ? levels[channel] * volume : 0
                             let db = amplitude > 0.00001 ? 20 * log10(amplitude) : -60
-                            let value = max(0, min(1, (db + 60) / 60))
+                            let value = max(0, min(1, (db + 48) / 42))
                             let pivot = CGPoint(x: size.width * (channel == 0 ? 0.27 : 0.77), y: size.height * 0.97)
                             let radius = min(size.width * 0.24, size.height * 0.85)
                             for tick in 0...10 {
@@ -114,12 +144,10 @@ struct MiniVUBackground: View {
                             let angle = (-150 + value * 120) * Double.pi / 180
                             var needle = Path(); needle.move(to: pivot)
                             needle.addLine(to: CGPoint(x: pivot.x + cos(angle) * radius, y: pivot.y + sin(angle) * radius))
-                            context.stroke(needle, with: .color(palette.accent.opacity(0.28)), lineWidth: 2)
+                            context.stroke(needle, with: .color(palette.accent.opacity(0.42)), lineWidth: 2)
                         }
                     }
-                }
-            }.clipShape(RoundedRectangle(cornerRadius: 6)).allowsHitTesting(false).accessibilityHidden(true)
-        }
+        }.id(tick)
     }
 }
 

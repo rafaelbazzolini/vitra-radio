@@ -1,6 +1,56 @@
 import AVFoundation
 
 @MainActor enum AudioBalanceVerification {
+    static func verifyPlayerMeter() {
+        Task { @MainActor in
+            let domain = "com.vitra.radio.player-meter.\(UUID().uuidString)"
+            let preferences = UserDefaults(suiteName: domain)!
+            let hls = CommandLine.arguments.contains("--verify-player-meter-hls")
+            // HLS may skip audio rendering at exactly zero volume. -100 dB keeps the test effectively inaudible.
+            preferences.set(hls ? 0.00001 : 0.0, forKey: "volume")
+            let player = RadioPlayer(preferences: preferences, updatesSystemMedia: false)
+            let file = FileManager.default.temporaryDirectory.appendingPathComponent("vitra-meter-\(UUID().uuidString).wav")
+            defer { player.shutdown(); preferences.removePersistentDomain(forName: domain); try? FileManager.default.removeItem(at: file) }
+            do {
+                try writeTone(file, amplitude: 0.5, stereo: true, frequency: 125, rightFrequency: 4000)
+                let baseline = AVPlayer(url: file)
+                baseline.volume = 0
+                baseline.play()
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                guard baseline.currentItem?.status == .readyToPlay else { throw AppUpdateError(message: "O arquivo de teste não iniciou a reprodução de referência.") }
+                baseline.pause(); baseline.replaceCurrentItem(with: nil)
+                let stream = hls ? URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_ts/a1/prog_index.m3u8")! : file
+                player.select(Station(id: "meter-fixture", name: "Teste de medição", frequency: "WEB", genre: "Teste", tagline: "", description: "", stream: stream, colors: Station.catalogColors, symbol: "waveform"))
+                var measured = false
+                let deadline = Date().addingTimeInterval(hls ? 20 : 8)
+                while Date() < deadline {
+                    let levels = player.audioLevels.read()
+                    if player.state.isPlaying && (hls ? player.audioLevels.hasRecentSamples : levels.0 > 0.01 && levels.1 > 0.001) { measured = true; break }
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
+                print("\(measured ? "PASS" : "FAIL"): AVPlayer alimenta o medidor real durante reprodução (\(hls ? "HLS em volume mínimo" : "arquivo, saída zero"))")
+                if !measured { print(player.diagnosticSummary); print("METER_STATUS: \(player.volumeBalanceStatus) fresh=\(player.audioLevels.hasRecentSamples) levels=\(player.audioLevels.read())") }
+                player.pause()
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                var music = Station(id: "music-meter-fixture", name: "Faixa de teste", frequency: "", genre: "Teste", tagline: "", description: "", stream: file, colors: Station.catalogColors, symbol: "music.note")
+                music.isLive = false
+                player.playMusic(queue: [music], index: 0)
+                var musicMeasured = false
+                let musicDeadline = Date().addingTimeInterval(8)
+                while Date() < musicDeadline {
+                    let levels = player.audioLevels.read()
+                    if player.state.isPlaying && levels.0 > 0.3 && levels.1 > 0.03 { musicMeasured = true; break }
+                    try? await Task.sleep(nanoseconds: 100_000_000)
+                }
+                print("\(musicMeasured ? "PASS" : "FAIL"): Faixa de música alimenta o VU sem normalização de rádio")
+                measured = measured && musicMeasured
+                print("PLAYER_METER_\(measured ? "OK" : "FAILED")")
+                player.shutdown(); preferences.removePersistentDomain(forName: domain); try? FileManager.default.removeItem(at: file)
+                fflush(stdout); exit(measured ? 0 : 1)
+            } catch { print("PLAYER_METER_FAILED: \(error)"); fflush(stdout); exit(1) }
+        }
+    }
+
     static func start() {
         Task {
             var failures = 0

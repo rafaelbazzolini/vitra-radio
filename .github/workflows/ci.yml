@@ -27,3 +27,4 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash scripts/build.sh
       - run: '"dist/Vitra Radio.app/Contents/MacOS/VitraRadio" --verify-audio-balance'
+      - run: '"dist/Vitra Radio.app/Contents/MacOS/VitraRadio" --verify-country-catalog'

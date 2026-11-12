@@ -33,6 +33,7 @@ final class DockSidePanel: NSPanel {
 final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, ObservableObject {
     let radio: RadioPlayer
     let servers: MusicServerStore
+    let countries: CatalogCountries
     let scheduler: RadioAutomationStore
     @Published var accentColorHex: UInt32? {
         didSet {
@@ -72,6 +73,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         self.preferences = preferences
         self.preview = preview
         self.updateChecker = UpdateChecker(preferences: preferences)
+        self.countries = CatalogCountries(preferences: preferences, preview: preview)
         self.scheduler = RadioAutomationStore(preferences: preferences)
         let savedAccent = preferences.object(forKey: "accentColorHex") as? NSNumber
         self.accentColorHex = savedAccent.flatMap { (0...0xFFFFFF).contains($0.int64Value) ? UInt32($0.int64Value) : nil }
@@ -220,7 +222,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         mainWindow.isReleasedWhenClosed = false
         mainWindow.backgroundColor = NSColor(red: 0.06, green: 0.08, blue: 0.065, alpha: 1)
         mainWindow.contentMinSize = NSSize(width: 1000, height: 710)
-        mainWindow.contentView = ClickableHostingView(rootView: RadioView().environmentObject(updateChecker).environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
+        mainWindow.contentView = ClickableHostingView(rootView: RadioView().environmentObject(countries).environmentObject(updateChecker).environmentObject(radio).environmentObject(self).environmentObject(servers).environmentObject(scheduler))
         mainWindow.delegate = self
         mainWindow.standardWindowButton(.closeButton)?.target = self
         mainWindow.standardWindowButton(.closeButton)?.action = #selector(hideMainWindow)

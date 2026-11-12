@@ -10,7 +10,7 @@ A distribuição pública inicia sem rádios, favoritas, histórico, automaçõe
 
 ## Conexões externas
 
-- Radio Browser recebe termos de pesquisa e parâmetros do catálogo.
+- Radio Browser recebe termos de pesquisa e os países selecionados para o catálogo. A sugestão inicial de país usa a região do macOS localmente, sem GPS ou consulta de IP a um serviço de geolocalização. A seleção é guardada nas preferências deste Mac.
 - A emissora/servidor recebe a conexão de áudio, incluindo IP e dados normais de rede.
 - GitHub recebe consultas de versões (`/releases/latest`) e downloads que o usuário solicitar.
 - Tailscale é configurado pelo usuário no sistema; o Vitra apenas usa uma URL alcançável. O projeto não recebe credenciais de Tailscale.
@@ -26,3 +26,7 @@ Desinstalar pode não apagar preferências e Keychain automaticamente, conforme 
 ## Repositório
 
 Builds, caches, keystores, `.env`, perfis de provisionamento e configurações locais estão no `.gitignore`. Os screenshots são gerados com emissoras fictícias em domínio reservado `example.invalid`. Não copie exports de preferências para issues ou commits.
+
+## Apoio voluntário
+
+O botão Apoiar só oferece pagamento quando um link HTTPS de recebimento tiver sido configurado pelo mantenedor. O link abre o site do provedor escolhido; o Vitra não recebe dados de cartão nem processa pagamentos. Não há cobrança automática.

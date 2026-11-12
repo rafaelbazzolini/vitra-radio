@@ -2,10 +2,12 @@ import SwiftUI
 
 struct CatalogView: View {
     @Environment(\.appPalette) private var palette
+    @EnvironmentObject private var countries: CatalogCountries
+    @State private var showingCountries = false
     @ObservedObject var catalog: RadioCatalog
     @State private var query = CatalogQuery()
     @State private var retry = 0
-    private var searchID: String { "\(query.brazilOnly)|\(query.name)|\(retry)" }
+    private var searchID: String { "\(countries.codes.joined(separator: ","))|\(query.name)|\(retry)" }
 
     var body: some View {
         ScrollView {
@@ -26,13 +28,12 @@ struct CatalogView: View {
                                 .buttonStyle(.plain).foregroundStyle(palette.muted).help("Limpar busca")
                         }
                     }.padding(14).background(palette.surface, in: RoundedRectangle(cornerRadius: 12))
-                    Picker("Região", selection: $query.brazilOnly) {
-                        Text("Brasil").tag(true)
-                        Text("Mundo").tag(false)
-                    }.pickerStyle(.segmented).frame(width: 158).accessibilityLabel("Região do catálogo")
+                    Button { showingCountries = true } label: {
+                        Label(countries.summary, systemImage: "globe").font(.system(size: 12, weight: .semibold))
+                    }.buttonStyle(VitraButtonStyle())
                 }
                 HStack {
-                    Text(query.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Populares no \(query.brazilOnly ? "Brasil" : "mundo")" : "Resultados da busca")
+                    Text(query.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Populares · \(countries.summary)" : "Resultados da busca")
                         .font(.system(size: 16, weight: .semibold))
                     Spacer()
                     if !catalog.stations.isEmpty {
@@ -85,6 +86,10 @@ struct CatalogView: View {
                 }.font(.system(size: 10)).foregroundStyle(palette.muted).tint(palette.muted)
             }.padding(.horizontal, 30).padding(.top, 47).padding(.bottom, 28)
         }.scrollIndicators(.hidden)
-            .task(id: searchID) { await catalog.search(query) }
+            .sheet(isPresented: $showingCountries) {
+                VStack { CatalogCountriesView(); Button("Concluir") { showingCountries = false }.buttonStyle(VitraButtonStyle()).padding(.bottom, 20) }
+                    .frame(width: 580, height: 640).background(palette.background)
+            }
+            .task(id: searchID) { await catalog.search(CatalogQuery(name: query.name, countryCodes: countries.codes)) }
     }
 }
