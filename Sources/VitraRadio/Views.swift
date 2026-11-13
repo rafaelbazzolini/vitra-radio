@@ -28,7 +28,7 @@ struct ClassicRadioView: View {
                 Rectangle().fill(palette.line).frame(width: 1)
                 if page == .catalog { CatalogView(catalog: catalog) }
                 else if page == .podcasts { PodcastsView() }
-                else if page == .server { MusicServerView() }
+                else if page == .server { MusicLibraryView() }
                 else if page == .settings { RadioSettingsView() }
                 else if page == .themes { PlayerThemesView() }
                 else if page == .automation { AutomationView() }

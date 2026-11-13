@@ -71,6 +71,8 @@ class RadioStore extends ChangeNotifier {
   void Function(Duration)? onProgress;
   VoidCallback? onMediaCompleted;
   bool get hasMedia => selected != null || mediaTitle != null;
+  int playbackRevision = 0;
+  Future<void> Function(int)? onMediaStep;
   int _searchGeneration = 0;
   String? _winnerKey;
   bool _automationOwnsPlayback = false;
@@ -204,6 +206,8 @@ class RadioStore extends ChangeNotifier {
 
   Future<void> play(RadioStation input, {bool automated = false}) async {
     if (!input.valid) return;
+    playbackRevision++;
+    onMediaStep = null;
     final station = remember(input);
     onProgress?.call(position);
     onProgress = null;
@@ -233,6 +237,7 @@ class RadioStore extends ChangeNotifier {
   }
 
   Future<void> toggle() async {
+    playbackRevision++;
     _automationOwnsPlayback = false;
     onProgress?.call(position);
     await player.playOrPause();
@@ -261,7 +266,10 @@ class RadioStore extends ChangeNotifier {
     Duration resume = Duration.zero,
     void Function(Duration)? progress,
     VoidCallback? completed,
+    Future<void> Function(int)? step,
   }) async {
+    playbackRevision++;
+    onMediaStep = step;
     onProgress?.call(position);
     onProgress = null;
     onMediaCompleted = null;

@@ -9,6 +9,8 @@ import 'core/preferences.dart';
 import 'core/podcasts.dart';
 import 'core/radio_moods.dart';
 import 'core/music.dart';
+import 'core/online_music.dart';
+import 'views/online_music_view.dart';
 import 'views/library_views.dart';
 import 'views/position_slider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -46,6 +48,7 @@ class VitraApp extends StatefulWidget {
 }
 
 class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
+  late final onlineMusic = OnlineMusicStore(radio.prefs);
   final updates = UpdateService();
   Timer? timer;
   final search = TextEditingController();
@@ -122,6 +125,7 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
     updates.dispose();
     widget.podcasts.dispose();
     widget.music.dispose();
+    onlineMusic.dispose();
     radio.dispose();
     super.dispose();
   }
@@ -134,6 +138,7 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
       settings,
       widget.podcasts,
       widget.music,
+      onlineMusic,
     ]),
     builder: (context, _) {
       final light = radio.skin == 'Studio';
@@ -306,8 +311,9 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
                         radio: radio,
                         settings: settings,
                       ),
-                      'Minhas Músicas' => MusicPage(
-                        store: widget.music,
+                      'Minhas Músicas' => MusicLibraryPage(
+                        music: widget.music,
+                        online: onlineMusic,
                         radio: radio,
                       ),
                       _ => settingsPage(context),
@@ -1351,7 +1357,9 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
     ],
   );
   Future<void> skip(int direction) async {
-    if (radio.isLive) {
+    if (radio.onMediaStep != null) {
+      await radio.onMediaStep!(direction);
+    } else if (radio.isLive) {
       await radio.skip(direction);
     } else if (radio.mediaID?.startsWith('music-') == true) {
       await widget.music.skip(direction, radio);
@@ -1422,13 +1430,17 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
         children: [
           IconButton(
             tooltip: tr(
-              radio.isLive || radio.mediaID?.startsWith('music-') == true
+              radio.isLive ||
+                      radio.onMediaStep != null ||
+                      radio.mediaID?.startsWith('music-') == true
                   ? 'Anterior'
                   : 'Voltar 15 segundos',
             ),
             onPressed: () => skip(-1),
             icon: Icon(
-              radio.isLive || radio.mediaID?.startsWith('music-') == true
+              radio.isLive ||
+                      radio.onMediaStep != null ||
+                      radio.mediaID?.startsWith('music-') == true
                   ? Icons.skip_previous
                   : Icons.replay,
             ),
@@ -1446,13 +1458,17 @@ class _VitraAppState extends State<VitraApp> with WidgetsBindingObserver {
           const SizedBox(width: 8),
           IconButton(
             tooltip: tr(
-              radio.isLive || radio.mediaID?.startsWith('music-') == true
+              radio.isLive ||
+                      radio.onMediaStep != null ||
+                      radio.mediaID?.startsWith('music-') == true
                   ? 'Próxima'
                   : 'Avançar 15 segundos',
             ),
             onPressed: () => skip(1),
             icon: Icon(
-              radio.isLive || radio.mediaID?.startsWith('music-') == true
+              radio.isLive ||
+                      radio.onMediaStep != null ||
+                      radio.mediaID?.startsWith('music-') == true
                   ? Icons.skip_next
                   : Icons.forward,
             ),

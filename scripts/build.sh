@@ -27,6 +27,9 @@ cp packaging/support.json "$APP/Contents/Resources/support.json"
 cp packaging/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${VITRA_VERSION:-0.1.0}" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${VITRA_BUILD:-1}" "$APP/Contents/Info.plist"
+if [ -n "${VITRA_JAMENDO_CLIENT_ID:-}" ]; then
+    /usr/libexec/PlistBuddy -c "Add :JamendoClientID string $VITRA_JAMENDO_CLIENT_ID" "$APP/Contents/Info.plist"
+fi
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 /usr/bin/codesign --force --sign - "$APP"
 echo "App pronto: $APP"

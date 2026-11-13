@@ -11,6 +11,8 @@ import 'package:vitra_radio/core/models.dart';
 import 'package:vitra_radio/core/preferences.dart';
 import 'package:vitra_radio/core/music.dart';
 import 'package:vitra_radio/core/podcasts.dart';
+import 'package:vitra_radio/core/online_music.dart';
+import 'package:vitra_radio/views/online_music_view.dart';
 
 class LayoutRadio extends ChangeNotifier implements RadioStore {
   @override
@@ -57,6 +59,77 @@ class LayoutRadio extends ChangeNotifier implements RadioStore {
 }
 
 void main() {
+  for (final size in [
+    const Size(320, 640),
+    const Size(600, 1024),
+    const Size(1024, 600),
+  ]) {
+    for (final playlists in [false, true]) {
+      testWidgets(
+        'online music fits $size with large text, playlists=$playlists',
+        (tester) async {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1;
+          tester.platformDispatcher.textScaleFactorTestValue = 1.5;
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+            tester.platformDispatcher.clearTextScaleFactorTestValue();
+          });
+          SharedPreferences.setMockInitialValues({});
+          final prefs = await SharedPreferences.getInstance();
+          final store = OnlineMusicStore(
+            prefs,
+            client: OnlineMusicClient(
+              client: MockClient(
+                (_) async =>
+                    http.Response('{"response":{"docs":[],"numFound":0}}', 200),
+              ),
+            ),
+          );
+          store.create('Uma playlist com nome longo para testar a organização');
+          final radio = LayoutRadio(prefs);
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: OnlineMusicPage(
+                  store: store,
+                  radio: radio,
+                  playlistsOnly: playlists,
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          if (!playlists) {
+            await tester.tap(find.text('Internet Archive').first);
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Jamendo').last);
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+            await tester.scrollUntilVisible(
+              find.text('Conexão Jamendo'),
+              100,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await tester.drag(find.byType(ListView), const Offset(0, -500));
+            await tester.pumpAndSettle();
+            await tester.ensureVisible(find.text('Conexão Jamendo'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('Conexão Jamendo'));
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+            expect(find.text('Client ID'), findsOneWidget);
+          }
+          await tester.pumpWidget(const SizedBox.shrink());
+          store.dispose();
+          radio.dispose();
+        },
+      );
+    }
+  }
+
   for (final size in [const Size(320, 640), const Size(1024, 600)]) {
     for (final page in [
       'Podcasts',

@@ -122,7 +122,7 @@ struct ThemedRadioWindow: View {
         case .catalog: CatalogView(catalog: catalog).background(Color(hex: design.panel).opacity(0.35))
         case .podcasts: PodcastsView()
         case .settings: RadioSettingsView()
-        case .server: MusicServerView().background(Color(hex: design.panel).opacity(0.35))
+        case .server: MusicLibraryView().background(Color(hex: design.panel).opacity(0.35))
         case .automation: AutomationView().background(Color(hex: design.panel).opacity(0.35))
         case .themes: PlayerThemesView().background(Color(hex: design.panel).opacity(0.35))
         case .explore:

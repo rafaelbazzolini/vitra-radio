@@ -46,6 +46,7 @@ final class RadioPlayer: ObservableObject {
     private var generation = 0
     private var lastFailure = ""
     private var musicQueue: [Station] = []
+    private var musicAdvance: ((Int) -> Void)?
     @Published private(set) var podcastArtwork: URL?
     @Published private(set) var podcastEpisode: PodcastEpisode?
     @Published private(set) var elapsed = 0.0
@@ -94,7 +95,7 @@ final class RadioPlayer: ObservableObject {
     func select(_ station: Station) {
         savePodcastProgress(); podcastEpisode = nil; podcastArtwork = nil; elapsed = 0; duration = 0
         playbackIntentID = UUID()
-        musicQueue = []
+        musicQueue = []; musicAdvance = nil
         resumePosition = 0
         let station = remember(station)
         if station.id == selected.id && wantsPlayback { return }
@@ -142,6 +143,7 @@ final class RadioPlayer: ObservableObject {
 
     func step(_ direction: Int) {
         if isPodcast { seekPodcast(to: elapsed + Double(direction * 15)); return }
+        if let musicAdvance { musicAdvance(direction); return }
         if !musicQueue.isEmpty {
             let current = musicQueue.firstIndex(where: { $0.id == selected.id }) ?? 0
             playMusic(queue: musicQueue, index: (current + direction + musicQueue.count) % musicQueue.count)
@@ -232,10 +234,10 @@ final class RadioPlayer: ObservableObject {
         if updatesSystemMedia { MPNowPlayingInfoCenter.default().nowPlayingInfo = nil }
     }
 
-    func playMusic(queue: [Station], index: Int) {
+    func playMusic(queue: [Station], index: Int, advance: ((Int) -> Void)? = nil) {
         guard queue.indices.contains(index), !queue[index].isLive else { return }
         savePodcastProgress(); podcastEpisode = nil; podcastArtwork = nil; elapsed = 0; duration = 0
-        musicQueue = queue
+        musicQueue = queue; musicAdvance = advance
         resumePosition = 0
         selected = queue[index]
         // URLs autenticadas e arquivos locais nunca entram nas preferências de rádios.
@@ -247,7 +249,7 @@ final class RadioPlayer: ObservableObject {
         wantsPlayback = false
         podcastEpisode = episode
         podcastArtwork = show.artwork
-        musicQueue = []
+        musicQueue = []; musicAdvance = nil
         resumePosition = position.isFinite ? max(0, position) : 0
         elapsed = resumePosition; duration = episode.duration
         selected = episode.station(show: show)
@@ -360,6 +362,7 @@ final class RadioPlayer: ObservableObject {
                     if ended && self.isPodcast {
                         self.pause(); self.savePodcastProgress(completed: true); self.resumePosition = 0; self.elapsed = 0
                     } else if ended && !self.selected.isLive {
+                        if let advance = self.musicAdvance { self.pause(); self.resumePosition = 0; advance(1); return }
                         if let index = self.musicQueue.firstIndex(where: { $0.id == self.selected.id }), index + 1 < self.musicQueue.count {
                             self.playMusic(queue: self.musicQueue, index: index + 1)
                         } else { self.pause(); self.resumePosition = 0 }

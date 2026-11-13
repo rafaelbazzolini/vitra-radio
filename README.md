@@ -62,6 +62,12 @@ A release inclui `SHA256SUMS.txt`. Preserve a pasta inteira dos aplicativos de d
 | Navidrome/Subsonic, Jellyfin e pastas locais | Sim; credenciais no Keychain | Navidrome/Subsonic e Jellyfin; pastas locais no Android pelo seletor do sistema, com credenciais protegidas |
 | Avisos de atualização | Dentro do app, com atualização e reinício | Aviso dentro do app e consultas configuráveis; notificações do sistema opcionais |
 
+### Música online e playlists
+
+Em **Minhas Músicas → Descobrir músicas**, pesquise no Internet Archive ou Jamendo por categoria, título e artista. O Archive também oferece pesquisa por compositor quando informado nos metadados. Abra álbuns do Archive para ver as faixas. A integração Jamendo requer um Client ID do aplicativo; nenhum identificador de teste acompanha o Vitra.
+
+**Minhas playlists** permite criar, renomear, excluir e reordenar listas e músicas, misturando faixas das duas fontes. A reprodução é somente online, com resolução do stream ao tocar cada faixa. Playlists ficam no dispositivo, separadas das rádios, podcasts, pastas e servidores. Consulte [Música online](docs/ONLINE_MUSIC.md) para configuração, limites e diferenças entre as fontes.
+
 ### Automação
 
 O app usa horário e fuso locais. Um período que começa depois assume a reprodução e, quando termina, retoma o anterior se ele ainda estiver vigente. Para o mesmo início, a faixa mais curta vem primeiro. Uma regra com **data específica** tem prioridade sobre semanais e executa somente naquela data; ela não se repete mensalmente. Dois períodos idênticos para os mesmos dias ou data são rejeitados.
