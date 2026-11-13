@@ -1,25 +1,9 @@
 import SwiftUI
 
+// Online discovery is temporarily hidden. Keep the implementation and saved playlists
+// so it can be restored without migrating or deleting user data.
 struct MusicLibraryView: View {
-    @ObservedObject private var localization = AppLocalization.shared
-    @Environment(\.appPalette) private var palette
-    @State private var tab = CommandLine.arguments.contains("--online-playlists-preview") ? "Minhas playlists" : CommandLine.arguments.contains("--online-music-preview") ? "Descobrir músicas" : "Sua biblioteca"
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                ForEach(["Sua biblioteca", "Descobrir músicas", "Minhas playlists"], id: \.self) { item in
-                    Button { tab = item } label: {
-                        Text(L10n.tr(item)).font(.system(size: 12, weight: .semibold)).padding(.horizontal, 16).padding(.vertical, 11)
-                            .foregroundStyle(tab == item ? palette.onAccent : palette.text)
-                            .background(tab == item ? palette.accent : palette.surface, in: Capsule()).contentShape(Capsule())
-                    }.buttonStyle(.plain)
-                }
-                Spacer()
-            }.padding(.horizontal, 30).padding(.top, 28).padding(.bottom, 12)
-            if tab == "Sua biblioteca" { MusicServerView() }
-            else { OnlineMusicView(playlistsOnly: tab == "Minhas playlists") }
-        }
-    }
+    var body: some View { MusicServerView() }
 }
 
 struct OnlineMusicView: View {

@@ -2,14 +2,11 @@
 
 Esta versão é gerada do commit de `main` indicado na release, após as verificações e builds.
 
-### Novidades da versão 0.1.12
+### Novidades da versão 0.1.13
 
-- Minhas Músicas reúne Sua biblioteca, Descobrir músicas e Minhas playlists no Mac e Android.
-- Busca online no Internet Archive por categorias, título, artista/autoria e compositor quando informado; álbuns abrem suas faixas.
-- Integração Jamendo por texto, título, artista e categoria, pronta para configurar um Client ID do aplicativo. Nenhuma chave de teste é incluída; sem Client ID, essa fonte permanece indisponível.
-- Playlists locais misturam faixas das duas fontes, com criação, renomeação, exclusão e reordenação de listas e músicas.
-- Reprodução somente online, resolução do stream ao tocar cada faixa, anterior/próxima e avanço automático até o fim da lista. Não há download ou modo offline.
-- Internet Archive validado com consulta real e recepção de áudio em memória. Testes nativos aprovados e 53 testes Flutter aprovados.
+- Minhas Músicas volta a abrir diretamente a biblioteca pessoal, com pastas do dispositivo e servidores de música.
+- Interface simplificada e documentação atualizada para refletir os recursos disponíveis.
+- Preferências, bibliotecas e dados já salvos no dispositivo são preservados.
 
 ### Novidades da versão 0.1.11
 

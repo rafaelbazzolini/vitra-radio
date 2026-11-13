@@ -1,7 +1,7 @@
 name: vitra_radio
 description: "Rádio pela internet com catálogo, temas e automação. Biblioteca privada no dispositivo."
 publish_to: 'none'
-version: 0.1.12+12
+version: 0.1.13+13
 
 environment:
   sdk: ^3.12.2

@@ -7,7 +7,8 @@ import '../core/radio_store.dart';
 import '../core/preferences.dart';
 import 'library_views.dart';
 
-class MusicLibraryPage extends StatefulWidget {
+// Online discovery is temporarily hidden; existing playlist metadata is preserved.
+class MusicLibraryPage extends StatelessWidget {
   final MusicStore music;
   final OnlineMusicStore online;
   final RadioStore radio;
@@ -18,45 +19,7 @@ class MusicLibraryPage extends StatefulWidget {
     required this.radio,
   });
   @override
-  State<MusicLibraryPage> createState() => _MusicLibraryPageState();
-}
-
-class _MusicLibraryPageState extends State<MusicLibraryPage> {
-  String tab = 'Sua biblioteca';
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final item in [
-              'Sua biblioteca',
-              'Descobrir músicas',
-              'Minhas playlists',
-            ])
-              Padding(
-                padding: const EdgeInsets.only(right: 8, bottom: 12),
-                child: ChoiceChip(
-                  label: Text(tr(item)),
-                  selected: tab == item,
-                  onSelected: (_) => setState(() => tab = item),
-                ),
-              ),
-          ],
-        ),
-      ),
-      Expanded(
-        child: tab == 'Sua biblioteca'
-            ? MusicPage(store: widget.music, radio: widget.radio)
-            : OnlineMusicPage(
-                store: widget.online,
-                radio: widget.radio,
-                playlistsOnly: tab == 'Minhas playlists',
-              ),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) => MusicPage(store: music, radio: radio);
 }
 
 class OnlineMusicPage extends StatefulWidget {
