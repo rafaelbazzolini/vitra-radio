@@ -199,6 +199,8 @@ struct PodcastClient {
 }
 
 @MainActor final class PodcastStore: ObservableObject {
+    struct Recent: Codable, Identifiable { var id: String { episode.id }; let show: PodcastShow; let episode: PodcastEpisode }
+    @Published private(set) var recents: [Recent] = []
     struct Progress: Codable { var seconds: Double; var completed: Bool; var updated: Date }
     @Published private(set) var favorites: [PodcastShow]
     @Published private(set) var results: [PodcastShow] = []
@@ -219,6 +221,8 @@ struct PodcastClient {
         progress = preferences.data(forKey: "podcastProgress").flatMap { try? JSONDecoder().decode([String: Progress].self, from: $0) } ?? [:]
         lastEpisode = preferences.data(forKey: "podcastLastEpisode").flatMap { try? JSONDecoder().decode(PodcastEpisode.self, from: $0) }
         lastShow = preferences.data(forKey: "podcastLastShow").flatMap { try? JSONDecoder().decode(PodcastShow.self, from: $0) }
+        recents = preferences.data(forKey: "podcastRecents").flatMap { try? JSONDecoder().decode([Recent].self, from: $0) } ?? []
+        if recents.isEmpty, let show = lastShow, let episode = lastEpisode { recents = [Recent(show: show, episode: episode)] }
     }
     func toggle(_ show: PodcastShow) {
         if favorites.contains(where: { $0.id == show.id }) { favorites.removeAll { $0.id == show.id } }
@@ -271,6 +275,10 @@ struct PodcastClient {
     }
     func close() { feedGeneration = UUID(); opened = nil; loading = false; error = nil }
     func remember(episode: PodcastEpisode, show: PodcastShow) {
+        recents.removeAll { $0.id == episode.id }
+        recents.insert(Recent(show: show, episode: episode), at: 0)
+        recents = Array(recents.prefix(50))
+        preferences.set(try? JSONEncoder().encode(recents), forKey: "podcastRecents")
         lastEpisode = episode; lastShow = show
         preferences.set(try? JSONEncoder().encode(episode), forKey: "podcastLastEpisode")
         preferences.set(try? JSONEncoder().encode(show), forKey: "podcastLastShow")

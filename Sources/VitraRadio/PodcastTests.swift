@@ -35,7 +35,9 @@ import AVFoundation
             store.toggle(feed.show); store.toggle(feed.show); store.toggle(feed.show)
             let episode = feed.episodes[0]
             store.remember(episode: episode, show: feed.show); store.record(id: episode.id, seconds: 123, completed: false)
+            store.remember(episode: episode, show: feed.show)
             let restored = PodcastStore(preferences: preferences)
+            check(restored.recents.count == 1 && restored.recents.first?.episode == episode, "Histórico de podcasts persiste sem duplicar episódios")
             check(restored.favorites.count == 1 && restored.lastEpisode == episode && restored.position(episode) == 123, "Favoritos, último episódio e posição persistem sem duplicar programas")
             check(preferences.stringArray(forKey: "favorites") == ["radio-original"], "Podcasts não alteram favoritas de rádios")
             restored.record(id: episode.id, seconds: .nan, completed: false)

@@ -141,6 +141,9 @@ struct ThemedRadioWindow: View {
                 Spacer()
                 TextField(L10n.tr("Buscar"), text: $search).textFieldStyle(.plain).font(.system(size: 11)).frame(width: 95).padding(8).background(Color(hex: design.panel), in: RoundedRectangle(cornerRadius: 5))
             }.foregroundStyle(design.secondary)
+            if radioSection.isPodcast {
+                HomePodcasts(section: radioSection, search: search) { page = .podcasts }
+            } else {
             if stations.isEmpty { Text(search.isEmpty ? (radioSection == .favorites ? L10n.tr("Adicione favoritas pelo coração de cada rádio.") : L10n.tr("As rádios que você ouvir aparecerão aqui, em ordem de reprodução.")) : L10n.tr("Nenhuma rádio encontrada.")).font(.system(size: 12)).foregroundStyle(design.secondary).padding(.vertical, 20) }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 9) {
                 ForEach(Array(stations.enumerated()), id: \.element.id) { index, station in
@@ -160,6 +163,7 @@ struct ThemedRadioWindow: View {
                     }.background(Color(hex: design.panel).opacity(station == radio.selected ? 1 : 0.58), in: RoundedRectangle(cornerRadius: skin == .digital ? 3 : 9))
                         .overlay(RoundedRectangle(cornerRadius: skin == .digital ? 3 : 9).strokeBorder(design.highlight.opacity(station == radio.selected ? 0.5 : 0.08)).allowsHitTesting(false))
                 }
+            }
             }
         }
     }

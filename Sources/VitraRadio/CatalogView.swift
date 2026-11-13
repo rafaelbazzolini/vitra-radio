@@ -4,6 +4,12 @@ struct CatalogView: View {
     @ObservedObject private var localization = AppLocalization.shared
     @Environment(\.appPalette) private var palette
     @EnvironmentObject private var countries: CatalogCountries
+    @EnvironmentObject private var radio: RadioPlayer
+    @State private var mood: RadioMood?
+    private var displayed: [Station] {
+        guard let mood else { return catalog.stations }
+        return radio.moodStations(mood).filter { query.name.isEmpty || "\($0.name) \($0.genre)".localizedCaseInsensitiveContains(query.name) }
+    }
     @State private var showingCountries = false
     @ObservedObject var catalog: RadioCatalog
     @State private var query = CatalogQuery()
@@ -33,21 +39,33 @@ struct CatalogView: View {
                         Label(L10n.tr(countries.summary), systemImage: "globe").font(.system(size: 12, weight: .semibold))
                     }.buttonStyle(VitraButtonStyle())
                 }
+                HStack(spacing: 8) {
+                    Button(L10n.tr("Todas")) { mood = nil }.buttonStyle(VitraButtonStyle())
+                    ForEach(RadioMood.allCases, id: \.self) { item in
+                        Button { mood = item } label: {
+                            Label(L10n.tr(item.rawValue), systemImage: mood == item ? "checkmark.circle.fill" : "circle")
+                        }.buttonStyle(VitraButtonStyle())
+                    }
+                }
+                if mood != nil {
+                    Text(L10n.tr("Seleção internacional e seus vínculos locais. Use a etiqueta de uma rádio para alterar as categorias."))
+                        .font(.caption).foregroundStyle(palette.muted)
+                }
                 HStack {
                     Text(query.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? L10n.tr("Populares · \(countries.summary)") : L10n.tr("Resultados da busca"))
                         .font(.system(size: 16, weight: .semibold))
                     Spacer()
-                    if !catalog.stations.isEmpty {
-                        Text(L10n.tr("\(catalog.stations.count) EMISSORAS")).font(.system(size: 9, weight: .medium, design: .monospaced))
+                    if !displayed.isEmpty {
+                        Text(L10n.tr("\(displayed.count) EMISSORAS")).font(.system(size: 9, weight: .medium, design: .monospaced))
                             .tracking(1).foregroundStyle(palette.muted)
                     }
                 }
-                if catalog.isLoading && catalog.stations.isEmpty {
+                if mood == nil && catalog.isLoading && displayed.isEmpty {
                     HStack(spacing: 10) {
                         ProgressView().controlSize(.small)
                         Text(L10n.tr("Buscando suas próximas rádios…")).font(.system(size: 12)).foregroundStyle(palette.muted)
                     }.frame(maxWidth: .infinity).padding(.vertical, 65)
-                } else if catalog.stations.isEmpty && catalog.error == nil {
+                } else if displayed.isEmpty && (mood != nil || catalog.error == nil) {
                     VStack(spacing: 11) {
                         Image(systemName: "dot.radiowaves.left.and.right").font(.system(size: 30, weight: .light)).foregroundStyle(palette.accent)
                         Text(L10n.tr("Nenhuma rádio encontrada")).font(.headline)
@@ -55,20 +73,20 @@ struct CatalogView: View {
                     }.frame(maxWidth: .infinity).padding(.vertical, 45)
                 }
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 13), GridItem(.flexible(), spacing: 13)], spacing: 13) {
-                    ForEach(catalog.stations) { StationCard(station: $0) }
+                    ForEach(displayed) { StationCard(station: $0) }
                 }
-                if let error = catalog.error {
+                if mood == nil, let error = catalog.error {
                     HStack(spacing: 12) {
                         Image(systemName: "wifi.exclamationmark").foregroundStyle(palette.muted)
                         Text(L10n.tr(error)).font(.system(size: 12)).foregroundStyle(palette.muted)
                         Spacer()
                         Button(L10n.tr("Tentar novamente")) {
-                            if catalog.stations.isEmpty { retry += 1 }
+                            if displayed.isEmpty { retry += 1 }
                             else { Task { await catalog.loadMore() } }
                         }.buttonStyle(.bordered).tint(palette.accent)
                     }.padding(16).background(palette.surface, in: RoundedRectangle(cornerRadius: 12))
                 }
-                if catalog.hasMore {
+                if mood == nil && catalog.hasMore {
                     Button {
                         Task { await catalog.loadMore() }
                     } label: {

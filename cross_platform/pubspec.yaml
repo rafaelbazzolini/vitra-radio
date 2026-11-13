@@ -1,7 +1,7 @@
 name: vitra_radio
 description: "Rádio pela internet com catálogo, temas e automação. Biblioteca privada no dispositivo."
 publish_to: 'none'
-version: 0.1.9+9
+version: 0.1.11+11
 
 environment:
   sdk: ^3.12.2
@@ -10,6 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_local_notifications: ^23.0.1
+  crypto: ^3.0.7
+  xml: ^7.0.1
+  flutter_secure_storage: ^10.0.0
+  flutter_localizations:
+    sdk: flutter
   http: ^1.6.0
   media_kit: ^1.2.6
   media_kit_libs_audio: ^1.0.7
@@ -25,3 +30,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/countries.json
+    - assets/en.json

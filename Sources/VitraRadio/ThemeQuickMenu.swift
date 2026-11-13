@@ -86,7 +86,8 @@ private struct ThemePickerList: View {
 }
 
 enum HomeRadioSection: String, CaseIterable {
-    case favorites = "Favoritas", recent = "Recentes"
+    case favorites = "Favoritas", recent = "Recentes", podcastFavorites = "Podcasts favoritos", podcastRecents = "Podcasts recentes"
+    var isPodcast: Bool { self == .podcastFavorites || self == .podcastRecents }
 }
 
 struct HomeRadioTabs: View {
@@ -94,6 +95,7 @@ struct HomeRadioTabs: View {
     @Environment(\.appPalette) private var palette
     @Binding var selection: HomeRadioSection
     var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
         HStack(spacing: 6) {
             ForEach(HomeRadioSection.allCases, id: \.self) { section in
                 Button { selection = section } label: {
@@ -106,5 +108,47 @@ struct HomeRadioTabs: View {
                 }.buttonStyle(.plain).accessibilityAddTraits(selection == section ? .isSelected : [])
             }
         }
+        }
+    }
+}
+
+struct HomePodcasts: View {
+    @EnvironmentObject private var store: PodcastStore
+    @EnvironmentObject private var radio: RadioPlayer
+    @Environment(\.appPalette) private var palette
+    let section: HomeRadioSection
+    let search: String
+    let open: () -> Void
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            if section == .podcastFavorites {
+                ForEach(store.favorites.filter { search.isEmpty || "\($0.title) \($0.author)".localizedCaseInsensitiveContains(search) }) { show in
+                    card(show.title, subtitle: show.author, icon: "podcasts") { open(); Task { await store.open(show) } }
+                }
+            } else {
+                ForEach(store.recents.filter { search.isEmpty || "\($0.show.title) \($0.episode.title)".localizedCaseInsensitiveContains(search) }) { item in
+                    card(item.episode.title, subtitle: item.show.title, icon: "play.circle.fill") {
+                        store.remember(episode: item.episode, show: item.show)
+                        radio.playPodcast(item.episode, show: item.show, position: store.position(item.episode))
+                    }
+                }
+            }
+        }
+        if section == .podcastFavorites ? store.favorites.isEmpty : store.recents.isEmpty {
+            Text(L10n.tr(section == .podcastFavorites ? "Favorite podcasts para encontrá-los aqui." : "Os episódios que você ouvir aparecerão aqui."))
+                .foregroundStyle(palette.muted).padding(.vertical, 20)
+        }
+    }
+    private func card(_ title: String, subtitle: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon == "podcasts" ? "mic.fill" : icon).font(.title2).foregroundStyle(palette.accent)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(title).font(.headline).lineLimit(2)
+                    Text(subtitle).font(.caption).foregroundStyle(palette.muted).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }.padding(16).frame(maxWidth: .infinity, alignment: .leading).background(palette.surface, in: RoundedRectangle(cornerRadius: 13)).contentShape(Rectangle())
+        }.buttonStyle(.plain)
     }
 }

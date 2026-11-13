@@ -94,6 +94,7 @@ enum SelfTests {
         failures += CountryCatalogTests.preferences()
         failures += LocalizationTests.run()
         failures += PodcastTests.run()
+        failures += RadioMoodTests.run()
         print("\(failures == 0 ? "SELF_TEST_OK" : "SELF_TEST_FAILED"): \(failures) falhas")
         if failures > 0 { exit(1) }
     }

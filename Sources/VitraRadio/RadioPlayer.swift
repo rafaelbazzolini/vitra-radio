@@ -10,6 +10,7 @@ final class RadioPlayer: ObservableObject {
     @Published private(set) var favorites: Set<String>
     @Published private(set) var recentStationIDs: [String]
     @Published private(set) var library: [Station]
+    @Published private(set) var moodOverrides: [String: [String]] = [:]
     @Published var volume: Double {
         didSet {
             player.volume = Float(volume)
@@ -58,6 +59,7 @@ final class RadioPlayer: ObservableObject {
 
     init(preferences: UserDefaults = .standard, updatesSystemMedia: Bool = true) {
         self.preferences = preferences
+        moodOverrides = preferences.dictionary(forKey: "radioMoodOverrides") as? [String: [String]] ?? [:]
         self.updatesSystemMedia = updatesSystemMedia
         volumeBalancingEnabled = preferences.object(forKey: "volumeBalancingEnabled") == nil || preferences.bool(forKey: "volumeBalancingEnabled")
         let records = preferences.data(forKey: "savedStations").flatMap { try? JSONDecoder().decode([Station.Saved].self, from: $0) } ?? []
@@ -157,6 +159,22 @@ final class RadioPlayer: ObservableObject {
 
     func canonical(_ station: Station) -> Station {
         library.first { $0.id == station.id || $0.stream == station.stream } ?? station
+    }
+
+    func hasMood(_ mood: RadioMood, station: Station) -> Bool {
+        if let override = moodOverrides[station.stream.absoluteString] { return override.contains(mood.rawValue) }
+        return RadioMood.suggestions.contains { $0.0 == mood && $0.1.stream == station.stream }
+    }
+    func toggleMood(_ mood: RadioMood, station: Station) {
+        let station = remember(station)
+        var values = RadioMood.allCases.filter { hasMood($0, station: station) }.map(\.rawValue)
+        if values.contains(mood.rawValue) { values.removeAll { $0 == mood.rawValue } } else { values.append(mood.rawValue) }
+        moodOverrides[station.stream.absoluteString] = values
+        preferences.set(moodOverrides, forKey: "radioMoodOverrides")
+    }
+    func moodStations(_ mood: RadioMood) -> [Station] {
+        var seen = Set<String>()
+        return (library + RadioMood.suggestions.map { $0.1 }).filter { hasMood(mood, station: $0) && seen.insert($0.stream.absoluteString).inserted }
     }
 
     func isFavorite(_ station: Station) -> Bool { favorites.contains(canonical(station).id) }

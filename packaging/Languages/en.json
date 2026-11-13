@@ -459,5 +459,15 @@
   "Escolha quando o Vitra deve buscar novas versões. Quando houver uma atualização, o aviso aparece dentro do app para você decidir quando atualizar.": "Choose when Vitra checks for new versions. When an update is available, an in-app notice lets you decide when to update.",
   "Verificar ao abrir o app": "Check when the app opens",
   "Verificar automaticamente uma vez por dia": "Automatically check once a day",
-  "A verificação diária funciona enquanto o app está executando, inclusive com a janela fechada. Nenhuma atualização é instalada sem você confirmar.": "Daily checks run while the app is running, including with the window closed. No update is installed without your confirmation."
+  "A verificação diária funciona enquanto o app está executando, inclusive com a janela fechada. Nenhuma atualização é instalada sem você confirmar.": "Daily checks run while the app is running, including with the window closed. No update is installed without your confirmation.",
+  "Podcasts favoritos": "Favorite podcasts",
+  "Podcasts recentes": "Recent podcasts",
+  "Favorite podcasts para encontrá-los aqui.": "Favorite podcasts to find them here.",
+  "Os episódios que você ouvir aparecerão aqui.": "Episodes you listen to will appear here.",
+  "Treino": "Workout",
+  "Trabalho": "Work",
+  "Meditação": "Meditation",
+  "Vincular a categorias": "Assign categories",
+  "Categorias neste dispositivo": "Categories on this device",
+  "Seleção internacional e seus vínculos locais. Use a etiqueta de uma rádio para alterar as categorias.": "International selection and your local assignments. Use a station’s tag button to change its categories."
 }

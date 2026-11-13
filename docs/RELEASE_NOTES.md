@@ -2,6 +2,12 @@
 
 Esta versão é gerada do commit de `main` indicado na release, após as verificações e builds.
 
+### Novidades da versão 0.1.11
+
+- Filtros Treino, Trabalho e Meditação no catálogo, com sugestões internacionais e categorias personalizadas salvas no dispositivo.
+- Início reúne favoritas e recentes de rádios e podcasts; episódios recentes retomam do ponto salvo.
+- Android com navegação, países, idioma, podcasts, bibliotecas locais e servidores alinhados à versão Mac.
+
 ### Novidades no macOS
 
 - País sugerido na primeira abertura e seleção de vários países, com resultados misturados e paginação por país.
@@ -20,7 +26,12 @@ Esta versão é gerada do commit de `main` indicado na release, após as verific
 - Opções independentes em Ajustes para verificar ao abrir e automaticamente a cada 24 horas, persistidas entre sessões.
 - Aviso dentro do app e acesso direto ao APK oficial quando ele está disponível na release. A instalação continua sujeita à confirmação do Android.
 - Notificações do sistema são opcionais; não há promessa de verificações com o processo encerrado.
-- Podcasts e bibliotecas de pastas/servidores completos continuam exclusivos da edição nativa macOS nesta release.
+- Navegação alinhada ao Mac: Início, Todas as rádios, Podcasts, Minhas Músicas e Ajustes.
+- Idioma pt-BR/en e seleção de vários países na primeira abertura e nos Ajustes.
+- Busca do catálogo com paginação, preservação de acentos e alternativa de servidor em caso de indisponibilidade.
+- Podcasts com busca, RSS, favoritos, episódios e retomada.
+- Minhas Músicas com pastas locais pelo seletor Android, Navidrome/Subsonic e Jellyfin; credenciais protegidas pelo sistema.
+- Player inferior adaptado a retrato, paisagem e nomes longos. Recursos de janela flutuante, barra de menus, VU e normalização nativos do Mac ainda não estão disponíveis nesta edição.
 
 ### Downloads
 

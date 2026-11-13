@@ -158,9 +158,11 @@ struct ClassicRadioView: View {
                 HStack(alignment: .firstTextBaseline) {
                     HomeRadioTabs(selection: $radioSection)
                     Spacer()
-                    Text(L10n.tr("\(stations.count) EMISSORAS")).font(.system(size: 9, weight: .medium, design: .monospaced)).tracking(1).foregroundStyle(palette.muted)
+                    Text(radioSection.isPodcast ? "" : L10n.tr("\(stations.count) EMISSORAS")).font(.system(size: 9, weight: .medium, design: .monospaced)).tracking(1).foregroundStyle(palette.muted)
                 }
-                if stations.isEmpty {
+                if radioSection.isPodcast {
+                    HomePodcasts(section: radioSection, search: search) { page = .podcasts }
+                } else if stations.isEmpty {
                     VStack(spacing: 10) {
                         Image(systemName: favoritesOnly ? "heart" : "clock.arrow.circlepath").font(.title2).foregroundStyle(palette.accent)
                         Text(search.isEmpty ? (favoritesOnly ? L10n.tr("Suas favoritas moram aqui.") : L10n.tr("Suas próximas descobertas aparecem aqui.")) : L10n.tr("Nenhuma rádio encontrada.")).font(.headline)
@@ -259,6 +261,7 @@ struct StationCard: View {
             }.buttonStyle(.plain).help(L10n.tr("Ouvir \(station.name)"))
             VStack(spacing: 15) {
                 FavoriteButton(station: station)
+                RadioMoodMenu(station: station)
                 if selected && radio.active {
                     Equalizer(running: radio.state.isPlaying, color: palette.accent).frame(width: 17, height: 13)
                         .accessibilityLabel(L10n.tr(radio.state.label))
