@@ -2,6 +2,12 @@
 
 Esta versão é gerada do commit de `main` indicado na release, após as verificações e builds.
 
+### Novidades da versão 0.1.14
+
+- O ícone do Vitra na Dock do Mac permanece estático, inclusive durante a reprodução.
+- Preferências, bibliotecas e reprodução de áudio são preservadas.
+- Android acompanha a numeração da release, sem alteração funcional específica nesta versão.
+
 ### Novidades da versão 0.1.13
 
 - Minhas Músicas volta a abrir diretamente a biblioteca pessoal, com pastas do dispositivo e servidores de música.

@@ -61,7 +61,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     private var mainWindow: NSWindow!
     private var mini: DockSidePanel?
     let updateChecker: UpdateChecker
-    private let animatedIcon = AnimatedAppIcon()
     private var statusItem: NSStatusItem?
     private var subscriptions: Set<AnyCancellable> = []
     private var screenObserver: NSObjectProtocol?
@@ -158,8 +157,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
         recordLifecycle("iniciado")
         radio.$state.sink { [weak self] state in
             self?.statusItem?.button?.toolTip = "Vitra Radio · \(state.label)"
-            guard let self else { return }
-            if !self.preview { self.animatedIcon.setPlaying(state == .playing) }
         }.store(in: &subscriptions)
         radio.$alwaysOnTop.dropFirst().sink { [weak self] _ in
             Task { @MainActor [weak self] in self?.updatePanelLevel() }
@@ -452,7 +449,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSWindowDelegate, Ob
     func applicationWillTerminate(_ notification: Notification) {
         recordLifecycle("finalizando")
         saveMiniPosition()
-        animatedIcon.stop()
         scheduler.stop()
         updateChecker.stop()
         radio.shutdown()
